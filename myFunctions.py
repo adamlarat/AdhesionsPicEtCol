@@ -29,6 +29,9 @@ def newFile(filename):
         os.remove(filename)
     return open(filename,'w')
 
+""" Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences 
+    importés dans le dossier local 'CM/'
+"""
 def compteDocuments(): 
     nCertifs = 0
     nLicences= 0
@@ -40,77 +43,11 @@ def compteDocuments():
                 nLicences += 1
     return nCertifs,nLicences
 
-"""                
+""" Cette fonction permet de chercher un certificat nommé exactement 
+    'Certif_YYYYMMDDD_Prenom_Nom.*'
+    qui serait stocké dans le dossier 'certifDir'
+"""
 def trouveCertif(Day,Month,Year,FirstName,LastName,certifDir):
-    listOfFiles = []
-    for root, dirs, fnames in os.walk(certifDir):
-        for fname in fnames:
-            if LastName.lower() in fname.lower():
-                listOfFiles.append(fname)
-    nFiles = len(listOfFiles)
-    if nFiles == 1:
-        return True,listOfFiles
-    if nFiles > 1: 
-        shortList = []
-        for fname in listOfFiles:
-            if FirstName.lower() in fname.lower():
-                shortList.append(fname)
-        nFiles = len(shortList)
-        if nFiles == 1: 
-            return True,shortList
-        if nFiles > 1:
-            shortestList = []
-            for fname in shortList:
-                if Year+Month+Day in fname:
-                    shortestList.append(fname)
-            nFiles = len(shortestList)
-            if nFiles == 1:
-                return True,shortestList
-            else:
-                return False,shortestList
-        else: ### 0 files contain FirstName AND LastName
-            shortList = []
-            for fname in listOfFiles:
-                if Year+Month+Day in fname:
-                    shortList.append(fname)
-            nFiles = len(shortList)
-            if nFiles == 1: 
-                return True,shortList
-            else: 
-                return False,shortList
-    else: ### O files match LastName
-        shortList = []
-        for root, dirs, fnames in os.walk(certifDir):
-            for fname in fnames:
-                if FirstName.lower() in fname.lower():
-                    shortList.append(fname)
-        nFiles = len(shortList)
-        if nFiles == 1: 
-            return True,shortList
-        if nFiles > 1:
-            shortestList = []
-            for fname in shortList:
-                if Year+Month+Day in fname:
-                    shortestList.append(fname)
-            nFiles = len(shortestList)
-            if nFiles == 1:
-                return True,shortestList
-            else:
-                return False,shortestList
-        else: 
-            shortList = []
-            for root, dirs, fnames in os.walk(certifDir):
-                for fname in fnames:
-                    if Year+Month+Day in fname:
-                        shortList.append(fname)
-            nFiles = len(shortList)
-            if nFiles == 1: 
-                return True,shortList
-            else: 
-                return False,shortList
-"""            
-def trouveCertif(Day,Month,Year,FirstName,LastName,certifDir):
-    listOfFiles = []
     for root, dirs, fnames in os.walk(certifDir):
         for fname in fnames:
             if (FirstName+'_'+LastName).lower() in fname.lower():
@@ -118,10 +55,16 @@ def trouveCertif(Day,Month,Year,FirstName,LastName,certifDir):
                     return True,fname
     return False,''
 
-""" Cette fonction permet de récupérer un certificat médical dont on a le lien """
+""" Cette fonction permet de récupérer un certificat médical à partir 
+    * d'un lien de téléchargement
+    * ou en allant reconduire un certificat existant si non
+    Le certificat est alors nommé 'Certif_YYYYMMDD_Prenom_Nom.ext' et placé 
+    dans le dossier local 'CM/'
+"""
 def getCertif(dateCertif,lienCertif,FirstName,LastName,Status):
     if Status == 'EXT':
         return 0,'EXT','EXT'
+    print(dateCertif)
     Day,Month,Year = dateCertif.split('/')
     if lienCertif == '':
         ### Trouver le certificat déjà existant
@@ -159,36 +102,12 @@ def getLicence(lienLicence,FirstName,LastName,Status):
         os.rename(fileName,newFile)
         return 0
     
-""" Old Version
-def rechercherAdherent(adhesionsOld,LastName,FirstName,DoB,Status):
-    match  = np.where(adhesionsOld[:,2]==LastName)[0]
-    found  = False
-    error  = 0
-    if np.size(match) == 0 and Status == 'RNV':
-        print(' * ERROR_RNV: ',LastName,' not found in last year CSV File')
-        error = 1
-    elif np.size(match) > 1:
-        newMatch = np.where(adhesionsOld[match,3]==FirstName)[0]
-        if np.size(newMatch) == 0 and Status == 'RNV':
-            print(' * ERROR_RNV:',LastName,FirstName,'not found in last year CSV File')
-            error = 1   
-        elif np.size(newMatch) > 1 and Status == 'RNV': 
-            print(' * ERROR_RNV:',np.size(newMatch),'people are called',LastName+' '+FirstName,'in last year CSV File')
-            error = 2
-        else:
-            match = np.array(match[newMatch])
-    if np.size(match) == 1:
-        found  = True
-        rank   = match[0]
-        DoBOld = adhesionsOld[rank,4].replace('"','')
-        if DoBOld != DoB.replace('"',''): 
-            print(' * ERROR_RNV: Found ',LastName+' '+FirstName,' but Date of Birth dont match')
-            print(' * - Nouvelle date de naissance :',DoB)
-            print(' * - Ancienne date de naissance :',DoBOld)
-            error = 3    
-    if Status != 'RNV': 
-        error = 0 ### not finding old adhesion does not matter if its not RNV
-    return found,adhesionsOld[match],error
+
+""" Cette fonction permet de rechercher un adhérent à partir de 
+    * son nom
+    * son prénom 
+    * sa date de naissance 
+    dans un ancien fichier '*.csv'. 
 """
 def rechercherAdherent(adhesionsOld,LastName,FirstName,DoB,Status):
     found  = False
@@ -219,12 +138,17 @@ def rechercherAdherent(adhesionsOld,LastName,FirstName,DoB,Status):
                 found = True
     return found,adhesionsOld[match],error
 
+""" Cette fonction prend un date sous forme de chaîne de caractère 'DDMMYYYY'
+    et retourne un objet de type date correspondant. 
+    Ainsi les dates peuvent être comparées par des opérateurs booléens (<,>,=,ect..)
+"""
 def getDate(myDate):
     if myDate == '' or myDate == 'EXT':
         return date(1970,1,1)
     d,m,y = [int(x) for x in myDate.split('/')]
     return date(y,m,d)
 
+""" Mets à jour un adhérent à partir d'informations trouvées dans un ancien fichier d'adhésions"""
 def updateAdh(oldAdh,Status,numLicence,dateCertif,lienCertif,certifOK,assurage,FirstName,LastName):
     oldNumLicence = oldAdh[0,16]
     oldStatus     = oldAdh[0,17].replace('"','')
@@ -274,6 +198,7 @@ def updateAdh(oldAdh,Status,numLicence,dateCertif,lienCertif,certifOK,assurage,F
     certifOK = oldCertifOK
     assurage = oldAssurage
     return Status,numLicence,dateCertif,lienCertif,certifOK,assurage,error
+
 """ Cette fonction transforme le résultat brut de la colonne 'statut'
 [Nouveau·elle, Renouvellement, Mutation, Extérieur·e, Licence 4 mois]
 dans l'encodage choisi [NVO,RNV,MUT,EXT,4MS]

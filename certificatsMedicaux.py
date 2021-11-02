@@ -10,17 +10,17 @@ import numpy as np
 import sys
 import myFunctions as mf
 
-"""
+
 if len(sys.argv) < 2 :
     print('Please provide a CSV file name!')
     print('Syntax: python certificatsMedicaux.py exportFromHelloAsso.csv')
     sys.exit("Abort!")
-
 # Nom du fichier CSV a traiter    
 CSVFilename = sys.argv[1]
+
 """
 CSVFilename = '/home/larat/Téléchargements/CertifMedico/export-newFormat.csv'
-
+"""
 
 # Récupération du fichier dans un tableau Numpy
 adhesions = np.genfromtxt(CSVFilename,delimiter=';',dtype=None,encoding=None)
@@ -147,11 +147,6 @@ adhesions_export[1:,28] = np.where(adhesions[1:,29]=='RNV','Autonome','Débutant
 # Modification des titres de colonnes 
 adhesions_export[0,:] = TitreColumns
 
-"""
-# Output
-np.savetxt('Adhesions_Nettoyees.csv',adhesions_export,delimiter=';',fmt='%s')
-print('New CSV file has been dumped in "Adhesions_Nettoyees.csv"')
-"""
 
 # Récupération des Licences
 ### Création des données nécessaires
@@ -206,10 +201,15 @@ arrNew = indices[np.where((statuses=='NVO')+
                           (statuses=='4MS'))]
 # Output
 np.savetxt('Adhesions_Nettoyees.csv',adhesions_export        ,delimiter=';',fmt='%s')
-np.savetxt('mutations.csv'          ,adhesions_export[arrMut,2:24],delimiter=';',fmt='%s')
-np.savetxt('renouvellements.csv'    ,adhesions_export[arrRnv,2:24],delimiter=';',fmt='%s')
-np.savetxt('nouvos.csv'             ,adhesions_export[arrNew,2:24],delimiter=';',fmt='%s')
-np.savetxt('erreurs.csv'            ,adhesions_export[arrErr,2:24],delimiter=';',fmt='%s')
+if(len(arrMut)>0):
+    np.savetxt('mutations.csv'          ,adhesions_export[arrMut,2:24],delimiter=';',fmt='%s')
+if(len(arrRnv)>0):
+    np.savetxt('renouvellements.csv'    ,adhesions_export[arrRnv,2:24],delimiter=';',fmt='%s')
+if(len(arrNew)>0):
+    np.savetxt('nouvos.csv'             ,adhesions_export[arrNew,2:24],delimiter=';',fmt='%s')
+if(len(arrErr)>0):
+    np.savetxt('erreurs.csv'            ,adhesions_export[arrErr,2:24],delimiter=';',fmt='%s')
+
 # Print
 print("--------------------------------------------------")  
 print("Nombre total d'adhérent·e·s chargées : %03i"%N)
@@ -229,29 +229,5 @@ print("Certifs  = %03i"%nCertifs)
 print("Licences = %03i"%nLicences)
 print("--------------------------------------------------") 
 
-"""
-# List des colonnes réordonnées. 8 correspond à une colonne vide
-# DateInscription, LicencOK? (Vide), Nom, Prenom, Naissance, Sexe, Addresse1, ADD2 (vide), ADD3 (vide), CP, Ville, ASSUR? (Vide), TELDOM (vide), TELPRO (vide), Téléphone, email, NumLicence, TypeLicenceFSGT, NumClub, Champ1, Champ2, Champ3, Champ4, Date Certif (vide), Certif OK? (vide),  TypeAdhesion, TarifPayé, Statut, Assurage (vide), TélContact
-ListOfColumns = np.array([9,1,2,8,6,7,22,23,26,8,8,27,28,8,8,8,25,24,33,8,8,8,8,8,8,8,1,2,29,8,34])
-
-# Nouveau tableau et remplissage des colonnes vides 
-adhesions_export = adhesions[:,ListOfColumns]
-### Aucune licence n'a été faite, sauf les extérieurs
-adhesions_export[1:, 3] = np.where(adhesions[1:,29]=='EXT','EXT','NON')
-### Assurance pour tous, sauf les extérieurs 
-adhesions_export[1:,13] = np.where(adhesions[1:,29]=='EXT','EXT','OUI')
-### Certif OK?
-adhesions_export[1:,20] = np.where(adhesions[1:,29]=='EXT','EXT',np.array([ok.upper() for ok in adhesions[1:,31]]))
-### Date de certif (TODO!!!)
-### Assurage
-adhesions_export[1:,22] = np.where(adhesions[1:,29]=='RNV','Autonome','Débutant·e')
-
-# Modification des titres de colonnes 
-adhesions_export[0,:] = np.array(['DATE_INSCRIPTION','TYPE_LIC','TARIF','LICENCE_OK','NOM','PRENOM','NAISS','SEXE','ADRESSE','ADD2','ADD3','CP','VILLE','ASSUR','TELDOM','TELPRO','TELEPHONE','EMAIL','NUM_LICENCE','STATUT','CERTIF_OK','DATE_CERTIF','FORMATION_ASSURAGE','URGENCE'])
-
-# Output
-np.savetxt('Adhesions_Nettoyees.csv',adhesions_export,delimiter=';',fmt='%s')
-print('New CSV file has been dumped in "Adhesions_Nettoyees.csv"')
-"""
 
 
