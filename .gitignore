@@ -1,0 +1,6 @@
+*.bak
+*.csv
+*.{jpg,jpeg,pdf,png}
+CM/*
+__pycache__/*
+*.txt
