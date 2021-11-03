@@ -37,7 +37,7 @@ adhesions_export = io.exportHelloAssoFile(adhesions)
 arrOK  = []
 arrErr = []
 ### Suppression des fichiers 
-mf.emptyDir('CM')
+mf.emptyDir('Telechargements')
 ### Chargement de la base de données des anciennes licences
 OldCSVFilename = '/home/larat/Documents/Perso/Montagne/PicEtCol/Administration/Adhésions/2020-2021/AdhesionsPicEtCol_2020.csv'
 adhesionsOld = np.genfromtxt(OldCSVFilename,delimiter=';',dtype=None,encoding=None)

@@ -30,12 +30,12 @@ def newFile(filename):
     return open(filename,'w')
 
 """ Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences 
-    importés dans le dossier local 'CM/'
+    importés dans le dossier local 'Telechargements/'
 """
 def compteDocuments(): 
     nCertifs = 0
     nLicences= 0
-    for root, dirs, fnames in os.walk('CM/'):
+    for root, dirs, fnames in os.walk('Telechargements/'):
         for fname in fnames:
             if fname[:7] == 'Certif_':
                 nCertifs += 1
@@ -59,7 +59,7 @@ def trouveCertif(Day,Month,Year,FirstName,LastName,certifDir):
     * d'un lien de téléchargement
     * ou en allant reconduire un certificat existant si non
     Le certificat est alors nommé 'Certif_YYYYMMDD_Prenom_Nom.ext' et placé 
-    dans le dossier local 'CM/'
+    dans le dossier local 'Telechargements/'
 """
 def getCertif(dateCertif,lienCertif,FirstName,LastName,Statut):
     if Statut == 'EXT':
@@ -70,7 +70,7 @@ def getCertif(dateCertif,lienCertif,FirstName,LastName,Statut):
         oldCertifDir = '/home/larat/Documents/Perso/Montagne/PicEtCol/Administration/Adhésions/2020-2021/CertificatsMedicaux'
         found,file= trouveCertif(Day,Month,Year,FirstName,LastName,oldCertifDir)
         if found: 
-            shutil.copy2(oldCertifDir+'/'+file,'CM/')
+            shutil.copy2(oldCertifDir+'/'+file,'Telechargements/')
             dateFile = file.split('_')[1]
             Year  = dateFile[:4]
             Month = dateFile[4:6]
@@ -83,7 +83,7 @@ def getCertif(dateCertif,lienCertif,FirstName,LastName,Statut):
     else: 
         fileName = wget.download(lienCertif,bar=None)
         root,ext = os.path.splitext(fileName)
-        newFile  = 'CM/Certif_'+Year+Month+Day+'_'+FirstName+'_'+LastName+ext
+        newFile  = 'Telechargements/Certif_'+Year+Month+Day+'_'+FirstName+'_'+LastName+ext
         os.rename(fileName,newFile)
         return 0,'OUI',Day+'/'+Month+'/'+Year
     
@@ -97,7 +97,7 @@ def getLicence(lienLicence,clubLicence,FirstName,LastName,Statut):
     else:
         fileName = wget.download(lienLicence,bar=None)
         root,ext = os.path.splitext(fileName)
-        newFile  = 'CM/Licence2021_'+clubLicence+'_'+FirstName+'_'+LastName+ext
+        newFile  = 'Telechargements/Licence2021_'+clubLicence+'_'+FirstName+'_'+LastName+ext
         os.rename(fileName,newFile)
         return 0
     
