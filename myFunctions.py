@@ -262,7 +262,7 @@ def format_tel(tel):
             form_tel+=(i+' ')
         else:
             form_tel+=i	
-    return form_tel
+    return form_tel[:-1]
 
 """ Fonction de formatage des chaînes de caractères pour permettre des comparaisons
     qui évitent les accents, tirets, espaces, etc
