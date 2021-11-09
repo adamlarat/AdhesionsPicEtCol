@@ -89,7 +89,12 @@ import myFunctions as mf
 
 def readHelloAssoFile(CSVFilename):
     # Récupération du fichier dans un tableau Numpy
-    adhesions = np.genfromtxt(CSVFilename,delimiter=';',dtype=None,encoding=None)
+    #adhesions = np.genfromtxt(CSVFilename,delimiter=';',converters = {lambda s: s.replace('"','').strip()}, dtype=None,encoding=None)
+    adhesions   = np.genfromtxt(CSVFilename,delimiter=';',deletechars='"',autostrip=True, dtype=None,encoding=None)
+    nLines,nCols = np.shape(adhesions)
+    for line in range(nLines): 
+        for col in range(nCols):
+            adhesions[line,col] = adhesions[line,col].replace('"','').strip()
     # Renommer les titres des colonnes pour simplifier l'export 
     adhesions = replaceColumnTitle(adhesions)
     
@@ -132,17 +137,18 @@ def replaceColumnTitle(adhesions):
     pattern_matching = np.array(
         [
             ["Numéro",'INDEX'],
-            ["Formule",'TYPE_ADHESION'],
-            ["Montant adhésion",'TARIF'],
-            ["Statut",'PAIEMENT_OK'],
+            ["Tarif",'TYPE_ADHESION'],
+            ["Montant (€)",'TARIF'],
+            ["Status",'PAIEMENT_OK'],
             ["Moyen de paiement",'MOYEN_PAIEMENT'],
             ["Nom",'NOM'],
             ["Prénom",'PRENOM'],
             ["Société",'VIDE'],
             ["Date",'DATE_INSCRIPTION'],
-            ["Email",'UNUSED_EMAIL'],
+            ["Email acheteur",'UNUSED_EMAIL'],
             ["Date de naissance",'UNUSED_NAISS'],
             ["Attestation",'FACTURE'],
+            ###%%%%%% Champs Complémentaires%%%%%%
             [" Date de naissance",'NAISS'],
             [" Genre",'SEXE'],
             [" Email",'EMAIL'],
@@ -163,7 +169,7 @@ def replaceColumnTitle(adhesions):
     for i in range(nCol):
         title = adhesions[0,i]
         formulaire = False
-        if 'Champ additionnel:' in title:
+        if 'Champ complémentaire ' in title:
             formulaire = True
         for pair in pattern_matching:
             pattern = pair[0]

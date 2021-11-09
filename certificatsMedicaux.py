@@ -16,7 +16,8 @@ if len(sys.argv) < 2 :
     print('***** ATTENTION !!! ******')
     print('Merci de fournir un chemin pour un fichier CSV à traiter !')
     print('Syntaxe: python certificatsMedicaux.py exportFromHelloAsso.csv')
-    CSVFilename = '/home/larat/Téléchargements/CertifMedico/export-newFormat.csv'
+    CSVFilename = '/home/larat/Téléchargements/adhesion-saison-2021-2022.csv'
+    #CSVFilename = '/home/larat/Téléchargements/CertifMedico/export-newFormat.csv'
     #CSVFilename = '/home/larat/Téléchargements/export-adhesion-saison-2021-2022-25_10_2021-01_11_2021.csv'
     print("Puisque vous n'en avez fourni aucun, je le fais pour vous :",CSVFilename)
     print('***** ATTENTION !!! ******')

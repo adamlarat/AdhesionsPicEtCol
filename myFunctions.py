@@ -209,11 +209,11 @@ def statut(chaine):
 		return 'NVO'
 	elif deb == 'Ren': 
 		return 'RNV'
-	elif deb == ' Mu': 
+	elif deb == 'Mut': 
 		return 'MUT'
-	elif deb == ' Ex': 
+	elif deb == 'Ext': 
 		return 'EXT'
-	elif deb == ' Li': 
+	elif deb == 'Lic': 
 		return '4MS'
 	else: 
 		return chaine
