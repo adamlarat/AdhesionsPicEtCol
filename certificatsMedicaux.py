@@ -40,8 +40,9 @@ arrErr = []
 ### Suppression des fichiers 
 mf.emptyDir('Telechargements')
 ### Chargement de la base de données des anciennes licences
-OldCSVFilename = '/home/larat/Documents/Perso/Montagne/PicEtCol/Administration/Adhésions/2020-2021/AdhesionsPicEtCol_2020.csv'
-adhesionsOld = np.genfromtxt(OldCSVFilename,delimiter=';',dtype=None,encoding=None)
+#OldCSVFilename = '/home/larat/Documents/Perso/Montagne/PicEtCol/Administration/Adhésions/2020-2021/AdhesionsPicEtCol_2020.csv'
+OldCSVFilename = '../2020-2021/AdhesionsPicEtCol_2020.csv'
+adhesionsOld = np.genfromtxt(OldCSVFilename,delimiter=';',dtype=None,encoding='utf8')
 ### Formatage des données pour assurer les égalités
 adhesionsOld[1:,2] = np.array([mf.matching_str(name.title()) for name in adhesionsOld[1:,2]])
 adhesionsOld[1:,3] = np.array([mf.matching_str(name.title()) for name in adhesionsOld[1:,3]])

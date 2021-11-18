@@ -12,7 +12,7 @@ import wget
 import os
 import shutil
 from unidecode import unidecode
-from datetime import date
+from datetime import date,datetime
 
 """Fonction pour supprimer un dossier en le vidant préalablement """
 def emptyDir(dirname):
@@ -55,6 +55,18 @@ def trouveCertif(Day,Month,Year,FirstName,LastName,certifDir):
                     return True,fname
     return False,''
 
+""" Cette fonction vérifie que le certificat médical fourni a bien moins de trois ans """
+def checkDate(Day,Month,Year):
+    dateCertif = Day+'/'+Month+'/'+Year
+    date       = getDate(dateCertif)
+    jours      = (datetime.now().date()-date).days
+    if jours>=0 and jours//365 < 3 :
+        return 0,'OUI',dateCertif
+    else:
+        print(" * ERROR_DAT: La date du certificat n'a pas moins de trois ans !")
+        print(" * Date_Certif : ",dateCertif)
+        return 2,'NON',dateCertif
+
 """ Cette fonction permet de récupérer un certificat médical à partir 
     * d'un lien de téléchargement
     * ou en allant reconduire un certificat existant si non
@@ -67,7 +79,7 @@ def getCertif(dateCertif,lienCertif,FirstName,LastName,Statut):
     Day,Month,Year = dateCertif.split('/')
     if lienCertif == '':
         ### Trouver le certificat déjà existant
-        oldCertifDir = '/home/larat/Documents/Perso/Montagne/PicEtCol/Administration/Adhésions/2020-2021/CertificatsMedicaux'
+        oldCertifDir = '../2020-2021/CertificatsMedicaux'
         found,file= trouveCertif(Day,Month,Year,FirstName,LastName,oldCertifDir)
         if found: 
             shutil.copy2(oldCertifDir+'/'+file,'Telechargements/')
@@ -75,7 +87,7 @@ def getCertif(dateCertif,lienCertif,FirstName,LastName,Statut):
             Year  = dateFile[:4]
             Month = dateFile[4:6]
             Day   = dateFile[6:]
-            return 0,'OUI',Day+'/'+Month+'/'+Year
+            return checkDate(Day,Month,Year)
         else:
             print(' * ERROR_'+Statut+': Certificat Médical Manquant !')
             print(' * Certif_'+Year+Month+Day+'_'+FirstName+'_'+LastName)
@@ -85,7 +97,7 @@ def getCertif(dateCertif,lienCertif,FirstName,LastName,Statut):
         root,ext = os.path.splitext(fileName)
         newFile  = 'Telechargements/Certif_'+Year+Month+Day+'_'+FirstName+'_'+LastName+ext
         os.rename(fileName,newFile)
-        return 0,'OUI',Day+'/'+Month+'/'+Year
+        return checkDate(Day,Month,Year)
     
 """ Cette fonction permet de récupérer la copie de la licence dont on a le lien """
 def getLicence(lienLicence,clubLicence,FirstName,LastName,Statut):
@@ -174,7 +186,7 @@ def updateAdh(oldAdh,Statut,numLicence,dateCertif,lienCertif,certifOK,assurage,F
         print(" * ERROR_"+Statut+": licence numbers are different!")
         print(" * - Last Year Licence Number:",oldNumLicence)
         print(" * - This Year Licence Number:",   numLicence)
-        numLicence = 'INCONNU'
+        numLicence = 'NUMLIC_INCONNU'
         error += 2
     elif numLicence == '""' and (Statut == 'EXT' or Statut == 'MUT'):
         print(' * INFO_'+Statut+': Missing Licence Number!')
@@ -251,7 +263,7 @@ def format_tel(tel):
     tel = re.sub(r'[^0-9]','',tel)
     tel = re.sub(r'^[03]+','',tel)
     if (len(tel) < 9) or ((tel[0]!='6') and (tel[0]!='7')):
-        tel = 'UNCOMPLETE'
+        tel = 'TEL_INCOMPLET'
         return tel
     tel = '0'+tel
     count = 0
@@ -271,4 +283,4 @@ def format_tel(tel):
     * formatFunc permet d'appliquer une fonction de formatage (upper,lower, title)
 """
 def matching_str(myStr):
-    return re.sub(r'[^a-zA-Z]','',unidecode(myStr))
+    return re.sub(r'[^a-zA-Z0-9]','',unidecode(myStr))

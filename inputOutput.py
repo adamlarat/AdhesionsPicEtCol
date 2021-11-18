@@ -86,17 +86,33 @@ Created on Tue Nov  2 14:35:18 2021
 
 import numpy as np
 import myFunctions as mf
+import re
+
+def preprocess(CSVFilename):
+    file    = open(CSVFilename,mode='r')
+    CSVFile = re.sub(r'(Champ complémentaire [0-9]+)\n',r'\1 ',file.read()).replace('\ufeff','')
+    file.close()
+    file    = open(CSVFilename,mode='w')
+    file.write(CSVFile)
+    file.close()
+    return
 
 def readHelloAssoFile(CSVFilename):
+    # Appliquer les changements nécessaires au fichier *.csv de HelloAsso pour sa lecture correcte
+    preprocess(CSVFilename)
     # Récupération du fichier dans un tableau Numpy
-    #adhesions = np.genfromtxt(CSVFilename,delimiter=';',converters = {lambda s: s.replace('"','').strip()}, dtype=None,encoding=None)
-    adhesions   = np.genfromtxt(CSVFilename,delimiter=';',deletechars='"',autostrip=True, dtype=None,encoding=None)
+    adhesions   = np.genfromtxt(CSVFilename,delimiter=';',deletechars='"',autostrip=True, dtype=None,encoding='utf8')
     nLines,nCols = np.shape(adhesions)
     for line in range(nLines): 
         for col in range(nCols):
             adhesions[line,col] = adhesions[line,col].replace('"','').strip()
     # Renommer les titres des colonnes pour simplifier l'export 
     adhesions = replaceColumnTitle(adhesions)
+    # Ajouter une dernière colonne 'VIDE' pour gérer le format FSGT
+    adhesions = np.append(adhesions,[['VIDE']]+[[''] for i in range(nLines-1)],axis=1)
+    
+    print(adhesions[0])
+    
     
     # Remplacement de certains champs pour compresser
     ### Nom en capitale
@@ -143,7 +159,6 @@ def replaceColumnTitle(adhesions):
             ["Moyen de paiement",'MOYEN_PAIEMENT'],
             ["Nom",'NOM'],
             ["Prénom",'PRENOM'],
-            ["Société",'VIDE'],
             ["Date",'DATE_INSCRIPTION'],
             ["Email acheteur",'UNUSED_EMAIL'],
             ["Date de naissance",'UNUSED_NAISS'],
@@ -223,13 +238,10 @@ def exportHelloAssoFile(adhesions):
     ])
     
     # Création de la liste de numéros de colonnes de 'adhesions' correspondante à cette liste de titres 
-    ListOfColumns = []
-    colVide = getCol(adhesions,'VIDE')
-    for title in TitreColumns:
-        col = getCol(adhesions,title)
-        ListOfColumns += [col if (col>=0) else colVide]
-    ListOfColumns = np.array(ListOfColumns)
-    
+    ### Si le 'title' n'est pas dans la liste des en-têtes de 'adhesions' la fonction getCol()
+    ### renvoie '-1' qui est l'index de la dernière colonne qui est intentionnellement vide !
+    ListOfColumns = np.array([getCol(adhesions,title) for title in TitreColumns])
+
     # Nouveau tableau et remplissage des colonnes vides 
     adhesions_export = adhesions[:,ListOfColumns]
     # Modification des titres de colonnes 
