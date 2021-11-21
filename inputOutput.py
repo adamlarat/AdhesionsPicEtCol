@@ -86,25 +86,14 @@ def replaceColumnTitle(adhesions):
                    adhesions[0,i] = newTitle
                    break
     return adhesions
-    
-def export(adherents,N,telechargements):
-    adhesionsNettoyees = open('Adhesions_Nettoyees.csv',mode='w')
+
+def ecrireFichier(adherents,exportDict,adhesionsNettoyees):
+    ### En tête du fichier de gestion de adhérent·e·s
     enTete = ''
     for attribut in titreFSGT:
         enTete += titreFSGT[attribut]+';'
     print(enTete[:-1],file=adhesionsNettoyees)
-    renouvellements = open('renouvellements.csv',mode='w')
-    nouvos          = open('nouvos.csv',mode='w')
-    erreurs         = open('erreurs.csv',mode='w')
-    mutations       = open('mutations.csv',mode='w')
-    exportDict = {
-        'ERR': [0,'erreurs.csv',erreurs],
-        'RNV': [0,'renouvellements.csv',renouvellements],
-        'NVO': [0,'nouvos.csv',nouvos],
-        '4MS': [0,'nouvos.csv',nouvos],
-        'MUT': [0,'mutations.csv',mutations],
-        'EXT': [0,]
-    }
+    ### Remplissage des fichiers 
     nExport = 0
     for adherent in adherents:
         # Écrire dans le fichier de gestion des licences
@@ -112,14 +101,16 @@ def export(adherents,N,telechargements):
         nExport += 1
         # Exporter au Format FSGT pour import dans le serveur de licences
         if adherent.erreur > 0 :
-            print(adherent.toString('FSGT'),file=erreurs)
+            print(adherent.toString('FSGT'),file=exportDict['ERR'][-1])
             exportDict['ERR'][0] += 1
         elif adherent.statut == 'EXT':
             exportDict['EXT'][0] += 1
         else:
             print(adherent.toString('FSGT'),file=exportDict[adherent.statut][-1])
             exportDict[adherent.statut][0] += 1
-    # Résumé à l'écran
+    return nExport
+    
+def printToScreen(exportDict,N,nExport,telechargements):
     print("--------------------------------------------------")  
     print("Nombre total d'adhérent·e·s chargées : %03i"%N)
     print("Nombre d'adhérent·e·s exporté·e·s    : %03i"%nExport)
@@ -129,12 +120,6 @@ def export(adherents,N,telechargements):
         nStatut = exportDict[statut][0]
         print(statut+" = %03i"%nStatut)
         total += nStatut
-        if not (statut in ['EXT','4MS']):
-            exportDict[statut][-1].close()
-            if statut != 'NVO' and nStatut == 0:
-                os.remove(exportDict[statut][1])
-    if exportDict['NVO'][0]+exportDict['4MS'][0] == 0:
-        os.remove('nouvos.csv')
     print("--------------------------------------------------")  
     print("TOT = %03i"%total)
     nCertifs,nLicences = compteDocuments(telechargements)
@@ -142,6 +127,46 @@ def export(adherents,N,telechargements):
     print("Certifs  = %03i"%nCertifs)
     print("Licences = %03i"%nLicences)
     print("--------------------------------------------------") 
+
+def nomFichierImportFSGT():
+    maxi = 0
+    for root, dirs, fnames in os.walk('../2021-2022'):
+        for fname in fnames:
+            if 'fichier_import_base_licence' in fname:
+                nomFichier = os.path.splitext(fname)[0]
+                num  = int(nomFichier.split('_')[5][3:])
+                maxi = num if num>maxi else maxi
+    return 'fichier_import_base_licence_2021_Lot%03i.csv'%(maxi+1)
+    
+def export(adherents,N,telechargements):
+    # ouverture des fichiers
+    adhesionsNettoyees = open('Adhesions_Nettoyees.csv',mode='w')
+    fichierImport   = nomFichierImportFSGT()
+    importFSGT      = open(fichierImport,mode='w')
+    erreurs         = open('erreurs.csv',mode='w')
+    mutations       = open('mutations.csv',mode='w')
+    # stockage dans un dictionnaire
+    exportDict = {
+        'ERR': [0,'erreurs.csv',erreurs],
+        'RNV': [0,fichierImport,importFSGT],
+        'NVO': [0,fichierImport,importFSGT],
+        '4MS': [0,fichierImport,importFSGT],
+        'MUT': [0,'mutations.csv',mutations],
+        'EXT': [0,]
+    }
+    # écriture dans les fichiers
+    nExport = ecrireFichier(adherents,exportDict,adhesionsNettoyees)
+    # Résumé à l'écran
+    printToScreen(exportDict,N,nExport,telechargements)
+    # fermeture des fichiers
+    adhesionsNettoyees.close()
+    for statut in ['ERR','MUT']:
+        exportDict[statut][-1].close()
+        if exportDict[statut][0] == 0:
+            os.remove(exportDict[statut][1])
+    importFSGT.close()
+    if exportDict['NVO'][0]+exportDict['4MS'][0]+exportDict['RNV'][0] == 0: 
+        os.remove(fichierImport)
     
 
 """ Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences 
