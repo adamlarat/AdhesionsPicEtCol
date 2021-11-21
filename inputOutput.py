@@ -1,92 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov  2 14:35:18 2021
+Created on Sat Nov 20 10:21:01 2021
 
 @author: larat
 """
 
-""" ********************* PENSE-BÊTE ************************* """
-
-""" NB: Contenu actuel du fichier extrait depuis HelloAsso.com
-#COLONNE : INTITULÉ
-#00 : Numéro d'adhésion dans l'ordre croissant
-#01 : Formule choisie [Normal/Réduit/Soutien + Licence?]
-#02 : Montant payé
-#03 : Code Promo (Vide)
-#04 : Validé
-#05 : Moyen de Paiement
-#06 : Nom
-#07 : Prénom
-#08 : Société (Vide)
-#09 : Date et Heure Inscription
-#10 : email (unused)
-#11 : Date de Naissance (Pas fiable)
-#12 : Facture
-#13 : Reçu (Vide)
-#14 : Numéro de reçu (Vide)
-#15 : Carte d'adhérent (Vide)
-#16 : Nom Acheteur (CB)
-#17 : Prénom Acheteur (CB)
-#18 : Adresse Acheteur (CB)
-#19 : CP Acheteur (CB)
-#20 : Ville Acheteur (CB)
-#21 : Pays Acheteur (CB)
-### : ------------- Champs additionnels (Formulaire) ------------------
-#22 : Date de Naissance
-#23 : Genre [M,F,N]
-#24 : Email 
-#25 : Téléphone
-#26 : Adresse
-#27 : CP
-#28 : Ville 
-#29 : Statut [NVO,RNV,MUT,EXT,4MS]
-#30 : Copie Licence pour EXT [Lien]
-#31 : CM Nécessaire ? [Oui,Non]
-#32 : Certificat Médical [Lien]
-#33 : Date du Certificat Médical
-#34 : Numéro de Licence
-#35 : Contact Urgence
-"""
-""" ******************** Champs à exporter *********************
-#COLONNE : INTITULÉ
-#00 : Date Et Heure Inscription
-#01 : Licence OK [NON]
-### -------- Début Format FSGT ---------------
-#02 : Nom
-#03 : Prénom
-#04 : Date de Naissance
-#05 : Genre
-#06 : Adresse 1
-#07 : Adresse 2 [Vide]
-#08 : Adresse 3 [Vide]
-#09 : CP
-#10 : Ville
-#11 : ASSUR [Statut=='EXT'?'EXT':'OUI']
-#12 : TELDOM [Vide]
-#13 : TELPRO [Vide]
-#14 : Téléphone
-#15 : Email
-#16 : Numéro Licence
-#17 : Type Licence FSGT [OMNI,SAIS]
-#18 : NUMCLUB
-#19 : CHAMP1
-#20 : CHAMP2
-#21 : CHAMP3
-#22 : CHAMP4
-#23 : Date Certif [Plus Récent]
-### -------- Fin Format FSGT ---------------
-#24 : Certif OK [OUI,NON,EXT]
-#25 : Type d'adhésion
-#26 : Tarif payé
-#27 : Statut [NVO,RNV,MUT,EXT,4MS]
-#28 : Assurage [Statut=='RNV'?'Autonome':'Débutant·e'] 
-#29 : Contact Urgence
-"""
-
 import numpy as np
-import myFunctions as mf
 import re
+import os,shutil
+from Adherent import titreFSGT
 
 def preprocess(CSVFilename):
     file    = open(CSVFilename,mode='r')
@@ -101,52 +24,19 @@ def readHelloAssoFile(CSVFilename):
     # Appliquer les changements nécessaires au fichier *.csv de HelloAsso pour sa lecture correcte
     preprocess(CSVFilename)
     # Récupération du fichier dans un tableau Numpy
-    adhesions   = np.genfromtxt(CSVFilename,delimiter=';',deletechars='"',autostrip=True, dtype=None,encoding='utf8')
+    #adhesions   = np.genfromtxt(CSVFilename,delimiter=';',deletechars='"',autostrip=True, dtype=None,encoding='utf8')
+    adhesions   = np.genfromtxt(CSVFilename,delimiter=';',dtype=None,encoding='utf8')
+    # Enlever les doubles quote et supprimer les blancs de début et de fin de chaîne de caractères
+    adhesions = formaterTable(adhesions)
+    # Renommer les titres des colonnes pour simplifier l'export 
+    adhesions = replaceColumnTitle(adhesions)    
+    return adhesions
+
+def formaterTable(adhesions):
     nLines,nCols = np.shape(adhesions)
     for line in range(nLines): 
         for col in range(nCols):
             adhesions[line,col] = adhesions[line,col].replace('"','').strip()
-    # Renommer les titres des colonnes pour simplifier l'export 
-    adhesions = replaceColumnTitle(adhesions)
-    # Ajouter une dernière colonne 'VIDE' pour gérer le format FSGT
-    adhesions = np.append(adhesions,[['VIDE']]+[[''] for i in range(nLines-1)],axis=1)
-    
-    print(adhesions[0])
-    
-    
-    # Remplacement de certains champs pour compresser
-    ### Nom en capitale
-    colNom = getCol(adhesions,'NOM')
-    adhesions[1:,colNom] = np.array(['"'+name.upper()+'"' for name in adhesions[1:,colNom]])
-    ### Prénom avec la première lettre capitale
-    colPre = getCol(adhesions,'PRENOM')
-    adhesions[1:,colPre] = np.array(['"'+name.title()+'"' for name in adhesions[1:,colPre]])
-    ### Première lettre du genre uniquement
-    colSex = getCol(adhesions,'SEXE')
-    adhesions[1:,colSex] = np.array([sexe[:1]     for sexe in adhesions[1:,colSex]])
-    ### Adresse et Ville
-    colAdd = getCol(adhesions,'ADRESSE')
-    adhesions[1:,colAdd] = np.array(['"'+add.title()+'"'  for add in adhesions[1:,colAdd]])
-    colVil = getCol(adhesions,'VILLE')
-    adhesions[1:,colVil] = np.array(['"'+ville.title()+'"'  for ville in adhesions[1:,colVil]])
-    ### Numéro de tél et licences sous forme de chaînes de caractères
-    colTel = getCol(adhesions,'TELEPHONE')
-    adhesions[1:,colTel] = np.array(['"'+mf.format_tel(tel)+'"'  for tel in adhesions[1:,colTel]])
-    colLic = getCol(adhesions,'NUM_LICENCE')
-    adhesions[1:,colLic] = np.array(['"'+lic+'"'  for lic in adhesions[1:,colLic]])
-    ### Emails 
-    colMel = getCol(adhesions,'EMAIL')
-    adhesions[1:,colMel] = np.array(['"'+email.lower()+'"' for email in adhesions[1:,colMel]])
-    ### Statut
-    colSta = getCol(adhesions,'STATUT')
-    adhesions[1:,colSta] = np.array([mf.statut(state) for state in adhesions[1:,colSta]])
-    ### Formule d'adhésion 
-    colTyp = getCol(adhesions,'TYPE_ADHESION')
-    adhesions[1:,colTyp] = np.array([mf.typeAdhesion(form) for form in adhesions[1:,colTyp]])
-    ### Mise-à-jour des statuts
-    tarif = np.array([t[:3] for t in adhesions[1:,colTyp]])
-    adhesions[1:,colSta] = np.where(tarif=='EXT','EXT',np.where((tarif=='LIC')*(adhesions[1:,colSta]=='EXT'),'MUT',adhesions[1:,colSta]))
-
     return adhesions
 
 def replaceColumnTitle(adhesions):
@@ -196,74 +86,80 @@ def replaceColumnTitle(adhesions):
                    adhesions[0,i] = newTitle
                    break
     return adhesions
-                    
-def getCol(adhesions,title):
-    if np.sum(adhesions[0]==title) == 1:
-        return np.where(adhesions[0]==title)[0][0]
-    else:
-        return -1
-
-def exportHelloAssoFile(adhesions):
-    TitreColumns  = np.array([
-        'DATE_INSCRIPTION',
-        'LICENCE_OK',
-        'NOM',
-        'PRENOM',
-        'NAISS',
-        'SEXE',
-        'ADRESSE',
-        'ADD2',
-        'ADD3',
-        'CP',
-        'VILLE',
-        'ASSUR',
-        'TELDOM',
-        'TELPRO',
-        'TELEPHONE',
-        'EMAIL',
-        'NUM_LICENCE',
-        'TYPE_LIC_FSGT',
-        'NUMCLUB',
-        'CHAMP1',
-        'CHAMP2',
-        'CHAMP3',
-        'CHAMP4',
-        'DATE_CERTIF',
-        'CERTIF_OK',
-        'TYPE_ADHESION',
-        'TARIF',
-        'STATUT',
-        'FORMATION_ASSURAGE',
-        'URGENCE'
-    ])
     
-    # Création de la liste de numéros de colonnes de 'adhesions' correspondante à cette liste de titres 
-    ### Si le 'title' n'est pas dans la liste des en-têtes de 'adhesions' la fonction getCol()
-    ### renvoie '-1' qui est l'index de la dernière colonne qui est intentionnellement vide !
-    ListOfColumns = np.array([getCol(adhesions,title) for title in TitreColumns])
-
-    # Nouveau tableau et remplissage des colonnes vides 
-    adhesions_export = adhesions[:,ListOfColumns]
-    # Modification des titres de colonnes 
-    adhesions_export[0,:] = TitreColumns
-    ### Aucune licence n'a été faite, sauf les extérieurs
-    colStatOld = getCol(adhesions,'STATUT')
-    colLicOK   = getCol(adhesions_export,'LICENCE_OK')
-    adhesions_export[1:,colLicOK] = np.where(adhesions[1:,colStatOld]=='EXT','EXT','NON')
-    ### Assurance pour tous, sauf les extérieurs 
-    colAssur   = getCol(adhesions_export,'ASSUR')
-    adhesions_export[1:,colAssur] = np.where(adhesions[1:,colStatOld]=='EXT','EXT','OUI')
-    ### Type Licence FSGT
-    colTypLi   = getCol(adhesions_export,'TYPE_LIC_FSGT')
-    adhesions_export[1:,colTypLi] = np.where(adhesions[1:,colStatOld]=='EXT','EXT',
-                                    np.where(adhesions[1:,colStatOld]=='4MS','SAIS','OMNI'))
-    ### Certif OK?
-    colCertOK  = getCol(adhesions_export,'CERTIF_OK')
-    adhesions_export[1:,colCertOK] = np.where(adhesions[1:,colStatOld]=='EXT','EXT','NON')
-    ### Assurage
-    colAssurage = getCol(adhesions_export,'FORMATION_ASSURAGE')
-    adhesions_export[1:,colAssurage] = np.where(adhesions[1:,colStatOld]=='RNV','Autonome','Débutant·e')
+def export(adherents,N,telechargements):
+    adhesionsNettoyees = open('Adhesions_Nettoyees.csv',mode='w')
+    enTete = ''
+    for attribut in titreFSGT:
+        enTete += titreFSGT[attribut]+';'
+    print(enTete[:-1],file=adhesionsNettoyees)
+    renouvellements = open('renouvellements.csv',mode='w')
+    nouvos          = open('nouvos.csv',mode='w')
+    erreurs         = open('erreurs.csv',mode='w')
+    mutations       = open('mutations.csv',mode='w')
+    exportDict = {
+        'ERR': [0,'erreurs.csv',erreurs],
+        'RNV': [0,'renouvellements.csv',renouvellements],
+        'NVO': [0,'nouvos.csv',nouvos],
+        '4MS': [0,'nouvos.csv',nouvos],
+        'MUT': [0,'mutations.csv',mutations],
+        'EXT': [0,]
+    }
+    nExport = 0
+    for adherent in adherents:
+        # Écrire dans le fichier de gestion des licences
+        print(adherent.toString(),file=adhesionsNettoyees)
+        nExport += 1
+        # Exporter au Format FSGT pour import dans le serveur de licences
+        if adherent.erreur > 0 :
+            print(adherent.toString('FSGT'),file=erreurs)
+            exportDict['ERR'][0] += 1
+        elif adherent.statut == 'EXT':
+            exportDict['EXT'][0] += 1
+        else:
+            print(adherent.toString('FSGT'),file=exportDict[adherent.statut][-1])
+            exportDict[adherent.statut][0] += 1
+    # Résumé à l'écran
+    print("--------------------------------------------------")  
+    print("Nombre total d'adhérent·e·s chargées : %03i"%N)
+    print("Nombre d'adhérent·e·s exporté·e·s    : %03i"%nExport)
+    print("--------------------------------------------------")  
+    total = 0 
+    for statut in exportDict:
+        nStatut = exportDict[statut][0]
+        print(statut+" = %03i"%nStatut)
+        total += nStatut
+        if not (statut in ['EXT','4MS']):
+            exportDict[statut][-1].close()
+            if statut != 'NVO' and nStatut == 0:
+                os.remove(exportDict[statut][1])
+    if exportDict['NVO'][0]+exportDict['4MS'][0] == 0:
+        os.remove('nouvos.csv')
+    print("--------------------------------------------------")  
+    print("TOT = %03i"%total)
+    nCertifs,nLicences = compteDocuments(telechargements)
+    print("--------------------------------------------------")  
+    print("Certifs  = %03i"%nCertifs)
+    print("Licences = %03i"%nLicences)
+    print("--------------------------------------------------") 
     
-    return adhesions_export
-        
-        
+
+""" Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences 
+    importés dans le dossier local 'Telechargements/'
+"""
+def compteDocuments(telechargements): 
+    nCertifs = 0
+    nLicences= 0
+    for root, dirs, fnames in os.walk(telechargements):
+        for fname in fnames:
+            if fname[:7] == 'Certif_':
+                nCertifs += 1
+            elif fname[:7] == 'Licence':
+                nLicences += 1
+    return nCertifs,nLicences        
+
+"""Fonction pour supprimer un dossier en le vidant préalablement """
+def emptyDir(dirname):
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname)
+    os.mkdir(dirname)
