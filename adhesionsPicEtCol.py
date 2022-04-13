@@ -21,12 +21,10 @@ if len(sys.argv) < 3:
     )
     print("***** ATTENTION !!! ******")
     print()
-    fichierHelloAsso = "Logs/20220413/HelloAsso_20220413.csv"
-    adhesionsEnCours = "../2021-2022/AdhesionsPicEtCol_2021-2022.ods"
-    # sys.exit(
-    #     "Le fichier CSV à traiter ou \
-    # le fichier courant des adhésions n'ont pas été fournis !"
-    # )
+    sys.exit(
+        "Le fichier CSV à traiter ou \
+    le fichier courant des adhésions n'ont pas été fournis !"
+    )
 else:
     # Nom du fichier CSV a traiter
     fichierHelloAsso = sys.argv[1]

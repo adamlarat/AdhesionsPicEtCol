@@ -11,19 +11,9 @@ import os, shutil
 import myFunctions as mf
 import pylocalc as pyods
 
-# def preprocess(fichierHelloAsso):
-#     file    = open(fichierHelloAsso,mode='r')
-#     CSVFile = re.sub(r'(Champ complémentaire [0-9]+)\n',r'\1 ',file.read()).replace('\ufeff','')
-#     file.close()
-#     file    = open(fichierHelloAsso,mode='w')
-#     file.write(CSVFile)
-#     file.close()
-#     return
-
-
 def lireFichierHelloAsso(fichierHelloAsso):
-    # Appliquer les changements nécessaires au fichier *.csv de HelloAsso pour sa lecture correcte
-    #    preprocess(fichierHelloAsso)
+    """ Cette fonction reformate les données téléchargées depuis HelloAsso.com
+        et les stocke dans une structure numpy"""
     # Récupération du fichier dans un tableau Numpy
     adhesions = np.genfromtxt(fichierHelloAsso,delimiter=";",dtype=None,encoding="utf8")
     # Enlever les doubles quote et supprimer les blancs de début et de fin de chaîne de caractères
@@ -34,6 +24,9 @@ def lireFichierHelloAsso(fichierHelloAsso):
 
 
 def formaterTable(adhesions):
+    """ Une fois les données récupérées dans un tableau numpy, on supprime 
+        les caractères inutiles et les lignes vides.    
+    """
     nLines,nCols = np.shape(adhesions)
     supprLignes  = []
     for line in range(nLines):
@@ -50,6 +43,9 @@ def formaterTable(adhesions):
 
 
 def remplacerTitresColonnes(adhesions):
+    """ Cette fonction permet de normaliser les titres des colonnes. 
+        La table suivante donne les correspondance entre ce qui sort 
+        de HelloAsso et le format Pic&Col qui inclus le format FSGT."""
     pattern_matching = np.array(
         [
             ["Numéro", "INDEX"],
@@ -100,6 +96,11 @@ def remplacerTitresColonnes(adhesions):
 
 
 def chargerToutesLesAdhesions(chemins):
+    """ Cette fonction parcours tous les dossiers présents dans 'dossierAdhesions'
+        par ordre décroissant des saisons (2021-2022, puis 2020-2021, etc...)
+        Tant qu'un fichier AdhesionsPicEtCol_${saison}.ods est trouvé, il est 
+        chargé en mémoire dans un tableau numpy.
+        Cette fonction renvoie alors une liste de dictionnaires pour chaque saison."""
     fichierAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
     saison                    = chemins['saison']
     toutesLesAdhesions = []
