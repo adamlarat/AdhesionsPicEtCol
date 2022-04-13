@@ -7,74 +7,85 @@ Created on Sat Nov 20 10:21:01 2021
 """
 
 import numpy as np
-import re
-import os,shutil
-from Adherent import titreFSGT
+import os, shutil
+import myFunctions as mf
+import pylocalc as pyods
 
-def preprocess(CSVFilename):
-    file    = open(CSVFilename,mode='r')
-    CSVFile = re.sub(r'(Champ complémentaire [0-9]+)\n',r'\1 ',file.read()).replace('\ufeff','')
-    file.close()
-    file    = open(CSVFilename,mode='w')
-    file.write(CSVFile)
-    file.close()
-    return
+# def preprocess(fichierHelloAsso):
+#     file    = open(fichierHelloAsso,mode='r')
+#     CSVFile = re.sub(r'(Champ complémentaire [0-9]+)\n',r'\1 ',file.read()).replace('\ufeff','')
+#     file.close()
+#     file    = open(fichierHelloAsso,mode='w')
+#     file.write(CSVFile)
+#     file.close()
+#     return
 
-def readHelloAssoFile(CSVFilename):
+
+def lireFichierHelloAsso(fichierHelloAsso):
     # Appliquer les changements nécessaires au fichier *.csv de HelloAsso pour sa lecture correcte
-    preprocess(CSVFilename)
+    #    preprocess(fichierHelloAsso)
     # Récupération du fichier dans un tableau Numpy
-    #adhesions   = np.genfromtxt(CSVFilename,delimiter=';',deletechars='"',autostrip=True, dtype=None,encoding='utf8')
-    adhesions   = np.genfromtxt(CSVFilename,delimiter=';',dtype=None,encoding='utf8')
+    adhesions = np.genfromtxt(fichierHelloAsso,delimiter=";",dtype=None,encoding="utf8")
     # Enlever les doubles quote et supprimer les blancs de début et de fin de chaîne de caractères
     adhesions = formaterTable(adhesions)
-    # Renommer les titres des colonnes pour simplifier l'export 
-    adhesions = replaceColumnTitle(adhesions)    
+    # Renommer les titres des colonnes pour simplifier l'export
+    adhesions = remplacerTitresColonnes(adhesions)
     return adhesions
+
 
 def formaterTable(adhesions):
     nLines,nCols = np.shape(adhesions)
-    for line in range(nLines): 
+    supprLignes  = []
+    for line in range(nLines):
+        delete = True
         for col in range(nCols):
             adhesions[line,col] = adhesions[line,col].replace('"','').strip()
+            delete = (delete and adhesions[line,col] == "")
+        if delete: 
+            supprLignes += line,
+    # Supprimer les lignes qui ne contiennent que des caractères vides
+    if len(supprLignes)>0:
+        adhesions = np.delete(adhesions,supprLignes,axis=0)
     return adhesions
 
-def replaceColumnTitle(adhesions):
+
+def remplacerTitresColonnes(adhesions):
     pattern_matching = np.array(
         [
-            ["Numéro",'INDEX'],
-            ["Tarif",'TYPE_ADHESION'],
-            ["Montant (€)",'TARIF'],
-            ["Status",'PAIEMENT_OK'],
-            ["Moyen de paiement",'MOYEN_PAIEMENT'],
-            ["Nom",'NOM'],
-            ["Prénom",'PRENOM'],
-            ["Date",'DATE_INSCRIPTION'],
-            ["Email acheteur",'UNUSED_EMAIL'],
-            ["Date de naissance",'UNUSED_NAISS'],
-            ["Attestation",'FACTURE'],
-            ###%%%%%% Champs Complémentaires%%%%%%
-            [" Date de naissance",'NAISS'],
-            [" Genre",'SEXE'],
-            [" Email",'EMAIL'],
-            [" Numéro de téléphone",'TELEPHONE'],
-            [" Adresse",'ADRESSE'],
-            [" Code Postal",'CP'],
-            [" Ville",'VILLE'],
-            [" Statut",'STATUT'],
-            [" Copie",'LIEN_LICENCE'],
-            [" Club",'CLUB_LICENCE'],
-            [" J'étais",'CERTIF_RECONDUIT'],
-            [" Certificat médical de moins",'LIEN_CERTIF'],
-            [" Date du Certificat",'DATE_CERTIF'],
-            [" Numéro de la licence",'NUM_LICENCE'],
-            [" Téléphone d'un contact",'URGENCE']
-        ])
+            ["Numéro", "INDEX"],
+            ["Formule", "TYPE_ADHESION"],
+            ["Montant adhésion", "TARIF"],
+            ["Statut", "PAIEMENT_OK"],
+            ["Moyen de paiement", "MOYEN_PAIEMENT"],
+            ["Nom", "NOM"],
+            ["Prénom", "PRENOM"],
+            ["Date", "DATE_INSCRIPTION"],
+            ["Email", "UNUSED_EMAIL"],
+            ["Date de naissance", "UNUSED_NAISS"],
+            ["Attestation", "FACTURE"],
+            ###%%%%%% Champs Complémentaires. Commencent par un ' ' ! Important ! %%%%%%
+            [" Date de naissance", "NAISS"],
+            [" Genre", "SEXE"],
+            [" Email", "EMAIL"],
+            [" Numéro de téléphone", "TELEPHONE"],
+            [" Adresse", "ADRESSE"],
+            [" Code Postal", "CP"],
+            [" Ville", "VILLE"],
+            [" Statut", "STATUT"],
+            [" Copie", "LIEN_LICENCE"],
+            [" Club", "CLUB_LICENCE"],
+            [" J'étais", "CERTIF_RECONDUIT"],
+            [" Certificat médical de moins", "LIEN_CERTIF"],
+            [" Date du Certificat", "DATE_CERTIF"],
+            [" Numéro de la licence", "NUM_LICENCE"],
+            [" Téléphone d'un contact", "URGENCE"],
+        ]
+    )
     nCol = np.size(adhesions[0])
     for i in range(nCol):
         title = adhesions[0,i]
         formulaire = False
-        if 'Champ complémentaire ' in title:
+        if "Champ additionnel" in title:
             formulaire = True
         for pair in pattern_matching:
             pattern = pair[0]
@@ -87,61 +98,110 @@ def replaceColumnTitle(adhesions):
                    break
     return adhesions
 
-def ecrireFichier(adherents,exportDict,adhesionsNettoyees):
-    ### En tête du fichier de gestion de adhérent·e·s
-    enTete = ''
-    for attribut in titreFSGT:
-        enTete += titreFSGT[attribut]+';'
-    print(enTete[:-1],file=adhesionsNettoyees)
-    ### Remplissage des fichiers 
+
+def chargerToutesLesAdhesions(chemins):
+    fichierAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
+    saison                    = chemins['saison']
+    toutesLesAdhesions = []
+    while os.path.exists(fichierAdhesionsCourantes):
+        adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
+        adhesions_np = formaterTable(adhesions_np)
+        noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.upper())
+                                    for nom in mf.getCol(adhesions_np,'NOM')])
+        prenoms      = np.array([mf.supprimerCaracteresSpeciaux(prenom.title())
+                                    for prenom in mf.getCol(adhesions_np,'PRENOM')])
+        ddn          = np.array([dob.replace('"','').strip()
+                                    for dob in mf.getCol(adhesions_np,'NAISS')])
+        # Enregistrer les adhésions dans une structure adhoc
+        toutesLesAdhesions += {'saison':saison,
+                               'noms':noms,
+                               'prenoms':prenoms,
+                               'ddn':ddn,
+                               'tableau':adhesions_np,
+                               'fichier':fichierAdhesionsCourantes},
+        # Reculer d'une saison
+        annee       = int(saison.split("-")[0])-1
+        nvlleSaison = str(annee)+"-"+str(annee+1)
+        fichierAdhesionsCourantes=fichierAdhesionsCourantes.replace(saison,nvlleSaison)
+        saison      = nvlleSaison
+    return toutesLesAdhesions
+
+
+def ecrireFichiersFSGT(adherents,exportDict):
+    ### Remplissage des fichiers
     nExport = 0
     for adherent in adherents:
-        # Écrire dans le fichier de gestion des licences
-        print(adherent.toString(),file=adhesionsNettoyees)
         nExport += 1
         # Exporter au Format FSGT pour import dans le serveur de licences
-        if adherent.erreur > 0 :
-            print(adherent.toString('FSGT'),file=exportDict['ERR'][-1])
-            exportDict['ERR'][0] += 1
-        elif adherent.statut == 'EXT':
-            exportDict['EXT'][0] += 1
+        if adherent.erreur > 0:
+            print(adherent.toString("FSGT"), file=exportDict["ERR"][-1])
+            exportDict["ERR"][0] += 1
+        elif adherent.statut == "EXT":
+            exportDict["EXT"][0] += 1
         else:
-            print(adherent.toString('FSGT'),file=exportDict[adherent.statut][-1])
+            print(adherent.toString("FSGT"), file=exportDict[adherent.statut][-1])
             exportDict[adherent.statut][0] += 1
     return nExport
-    
+
 def printToScreen(exportDict,N,nExport,telechargements):
-    print("--------------------------------------------------")  
+    print("--------------------------------------------------")
     print("Nombre total d'adhérent·e·s chargées : %03i"%N)
     print("Nombre d'adhérent·e·s exporté·e·s    : %03i"%nExport)
-    print("--------------------------------------------------")  
-    total = 0 
+    print("--------------------------------------------------")
+    total = 0
     for statut in exportDict:
         nStatut = exportDict[statut][0]
         print(statut+" = %03i"%nStatut)
         total += nStatut
-    print("--------------------------------------------------")  
+    print("--------------------------------------------------")
     print("TOT = %03i"%total)
     nCertifs,nLicences = compteDocuments(telechargements)
-    print("--------------------------------------------------")  
+    print("--------------------------------------------------")
     print("Certifs  = %03i"%nCertifs)
     print("Licences = %03i"%nLicences)
-    print("--------------------------------------------------") 
+    print("--------------------------------------------------")
 
-def nomFichierImportFSGT():
-    maxi = 0
-    for root, dirs, fnames in os.walk('../2021-2022'):
-        for fname in fnames:
-            if 'fichier_import_base_licence' in fname:
-                nomFichier = os.path.splitext(fname)[0]
-                num  = int(nomFichier.split('_')[5][3:])
-                maxi = num if num>maxi else maxi
-    return 'fichier_import_base_licence_2021_Lot%03i.csv'%(maxi+1)
-    
-def export(adherents,N,telechargements):
+def nomFichierImportFSGT(parametresRobot):
+    """ Cette fonction lit les paramètres stockés dans le fichier
+        * parametresRobot.txt
+        les met à jour
+        et renvoie le nom du fichier d'import des nouvelles adhésion
+        sur le serveur de licence licence2.fsgt.org
+    """
+    param = open(parametresRobot,'r')
+    n     = int(param.readline().rstrip().split(';')[1].split('=')[1])
+    param.close()
+    return 'fichier_import_base_licence_2021_Lot%03i.csv'%(n+1),n+1
+
+def miseAJourAdhesionsEnCours(adherents,adhesionsEnCours):
+    """ Cette fonction ouvre un document *.ods à l'aide de la librairie Pylocalc.
+        Elle y insère toutes les données relatives aux adhérent·e·s
+    """
+    ### Ouverture du document
+    doc = pyods.Document(adhesionsEnCours)
+    doc.connect()
+    sheet = doc['Adhesions_Adultes']
+    ### mise-à-jour des adhésions
+    for adherent in adherents:
+        sheet.append_row(adherent.toODS())
+    doc.save()
+    doc.close()
+    os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
+
+
+def export(adherents,chemins):
+    """ Cette fonction finalise le travail sur les adhésions :
+        - Écriture dans les fichiers
+            * {mutations,renouvellements,nouvos,erreurs}.csv
+            * AdhesionsPicEtCol_saisonEnCours.ods
+        - Vérifier qu'on a bien le bon nombre de documents téléchargés
+        - Résumer le travail effectué à l'écran
+        - Mise-à-jour du fichier parametresRobot.txt
+    """
+    # Écriture dans le fichier ODS des adhésions en cours
+    miseAJourAdhesionsEnCours(adherents,chemins['adhesionsEnCoursODS'])
     # ouverture des fichiers
-    adhesionsNettoyees = open('Adhesions_Nettoyees.csv',mode='w')
-    fichierImport   = nomFichierImportFSGT()
+    fichierImport,nLots = nomFichierImportFSGT(chemins['parametresRobot'])
     importFSGT      = open(fichierImport,mode='w')
     erreurs         = open('erreurs.csv',mode='w')
     mutations       = open('mutations.csv',mode='w')
@@ -155,33 +215,37 @@ def export(adherents,N,telechargements):
         'EXT': [0,]
     }
     # écriture dans les fichiers
-    nExport = ecrireFichier(adherents,exportDict,adhesionsNettoyees)
+    nExport = ecrireFichiersFSGT(adherents,exportDict)
     # Résumé à l'écran
-    printToScreen(exportDict,N,nExport,telechargements)
-    # fermeture des fichiers
-    adhesionsNettoyees.close()
-    for statut in ['ERR','MUT']:
+    printToScreen(exportDict,len(adherents),nExport,chemins['Telechargements'])
+    # fermeture des fichiers et suppression de fichiers vides
+    for statut in ["ERR", "MUT"]:
         exportDict[statut][-1].close()
         if exportDict[statut][0] == 0:
             os.remove(exportDict[statut][1])
     importFSGT.close()
-    if exportDict['NVO'][0]+exportDict['4MS'][0]+exportDict['RNV'][0] == 0: 
+    if exportDict['NVO'][0]+exportDict['4MS'][0]+exportDict['RNV'][0] == 0:
         os.remove(fichierImport)
-    
+        nLots -= 1
+    # mise-à-jour du fichier de paramètres
+    param = open(chemins['parametresRobot'],'w')
+    param.write('DerniereReleve='+mf.today()+';DernierLot=%i'%nLots)
+    param.close()
 
-""" Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences 
-    importés dans le dossier local 'Telechargements/'
-"""
-def compteDocuments(telechargements): 
+def compteDocuments(telechargements):
+    """ Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences
+        importés dans le dossier local 'Telechargements/'
+    """
     nCertifs = 0
     nLicences= 0
     for root, dirs, fnames in os.walk(telechargements):
         for fname in fnames:
-            if fname[:7] == 'Certif_':
+            if fname[:7] == "Certif_":
                 nCertifs += 1
-            elif fname[:7] == 'Licence':
+            elif fname[:7] == "Licence":
                 nLicences += 1
-    return nCertifs,nLicences        
+    return nCertifs, nLicences
+
 
 """Fonction pour supprimer un dossier en le vidant préalablement """
 def emptyDir(dirname):

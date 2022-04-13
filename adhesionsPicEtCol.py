@@ -6,55 +6,80 @@ Created on Sat Nov 20 10:18:41 2021
 @author: larat
 """
 
-import numpy as np
 import sys
+import os
+import numpy as np
 import inputOutput as io
 from Adherent import Adherent
 
-
-if len(sys.argv) < 2 :
-    print('***** ATTENTION !!! ******')
-    print('Merci de fournir un chemin pour un fichier CSV à traiter !')
-    print('Syntaxe: python certificatsMedicaux.py exportFromHelloAsso.csv')
-    CSVFilename = '/home/larat/Téléchargements/adhesion-saison-2021-2022.csv'
-    #CSVFilename = '/home/larat/Téléchargements/CertifMedico/export-newFormat.csv'
-    #CSVFilename = '/home/larat/Téléchargements/export-adhesion-saison-2021-2022-25_10_2021-01_11_2021.csv'
-    print("Puisque vous n'en avez fourni aucun, je le fais pour vous :",CSVFilename)
-    print('***** ATTENTION !!! ******')
+if len(sys.argv) < 3:
+    print("***** ATTENTION !!! ******")
+    print("Merci de fournir un chemin pour un fichier CSV à traiter !")
+    print("Syntaxe: python adhesionsPicEtCol.py\
+                    [PATH]/exportFromHelloAsso.csv\
+                    [PATH]/AdhesionsPicEtCol_saisonEnCours.ods"
+    )
+    print("***** ATTENTION !!! ******")
     print()
+    fichierHelloAsso = "Logs/20220413/HelloAsso_20220413.csv"
+    adhesionsEnCours = "../2021-2022/AdhesionsPicEtCol_2021-2022.ods"
+    # sys.exit(
+    #     "Le fichier CSV à traiter ou \
+    # le fichier courant des adhésions n'ont pas été fournis !"
+    # )
 else:
-    # Nom du fichier CSV a traiter    
-    CSVFilename = sys.argv[1]
+    # Nom du fichier CSV a traiter
+    fichierHelloAsso = sys.argv[1]
+    # Nom du fichier courant des adhésions Pic&col
+    adhesionsEnCours = sys.argv[2]
 
-telechargements  = 'Telechargements'
-dossierAdhesions = '../'
-oldCertifDir     = dossierAdhesions+'2020-2021/CertificatsMedicaux'
-#OldCSVFilename = '/home/larat/Documents/Perso/Montagne/PicEtCol/Administration/Adhésions/2020-2021/AdhesionsPicEtCol_2020.csv'
-OldCSVFilename   = dossierAdhesions+'2020-2021/AdhesionsPicEtCol_2020.csv'
+### Dossiers et fichiers nécessaires au traitement des adhésions
+dossierAdhesions, saison = os.path.split(os.path.split(adhesionsEnCours)[0])
+dossierAdhesions        += "/"
+dossierLogs              = os.path.split(fichierHelloAsso)[0] + "/"
+chemins = {
+    'dossierLogs'         : dossierLogs,
+    'dossierAdhesions'    : dossierAdhesions,
+    'saison'              : saison,
+    'dossierCM'           : dossierAdhesions+saison+"/"+"CertificatsMedicaux/",
+    'Telechargements'     : dossierLogs + "Telechargements/",
+    'adhesionsEnCoursODS' : adhesionsEnCours,
+    'adhesionsEnCoursCSV' : os.path.splitext(adhesionsEnCours)[0] + ".csv",
+    'parametresRobot'     : "parametresRobot.txt"
+}
+toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
-### Lecture du CSV téléchargé sur helloasso.com
-adhesions = io.readHelloAssoFile(CSVFilename)
-### Nb Adhésions traitées
-N         = np.shape(adhesions)[0]-1
+### Lecture du CSV téléchargé sur helloasso.com. Stockage dans une structure numpy.
+helloAsso_np = io.lireFichierHelloAsso(fichierHelloAsso)
+### Nb de nouvelles adhésions à traitées
+Nb_nvo       = np.shape(helloAsso_np)[0]-1
+print(" *************************************")
+print(" Traitement des nouvelles adhésions...")
+print(" *************************************")
+nvllesAdhesions = []
+### Suppression des fichiers anciens si nécessaire
+io.emptyDir(chemins['Telechargements'])
+### Parcours de la liste téléchargées sur helloasso.com
+for i in range(1,Nb_nvo+1):
+    adherent = Adherent(i,helloAsso_np)
+    print("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
+    adherent.mettreAJour(toutesLesAdhesions)
+    # Ne rien faire si l'adhésion a déjà été enregistrée et stockée dans les adhésions en cours
+    if not adherent.adhesionEnCours:
+        adherent.telechargerDocuments(chemins)
+        adherent.formaterPourExport()
+        nvllesAdhesions += (adherent,)
 
-""" Création de la liste des nouveaux adhérents """
-adherents = []
-### Suppression des fichiers anciens 
-io.emptyDir(telechargements)
-### Chargement de la base de données des anciennes licences
-adhesionsOld = np.genfromtxt(OldCSVFilename,delimiter=';',dtype=None,encoding='utf8')
-adhesionsOld = io.formaterTable(adhesionsOld)
-for i in range(1,N+1):
-    adherent = Adherent(i,adhesions)
-    print('Adhérent·e : '+adherent.prenom+' '+adherent.nom+'  '+adherent.statut)
-    adherent.mettreAJour(adhesionsOld)
-    adherent.telechargerDocuments(telechargements,oldCertifDir)
-    adherent.formaterPourExport()
-    adherents += adherent,
-""" Écrire dans les fichiers 
-    * Adhesions_Nettoyees.csv
-    * {mutations,renouvellements,nouvos,erreurs}.csv
-    Et résumer le travail effectué à l'écran
-"""
-io.export(adherents,N,telechargements)
+print(" **************************************")
+print(" Vérification des adhésions en cours...")
+print(" **************************************")
+### Nb d'adhésions en cours
+enCours_np = toutesLesAdhesions[0]['tableau']
+Nb_enCours = np.shape(enCours_np)[0]-1
+for i in range(1,Nb_enCours+1):
+    adherent = Adherent(i,enCours_np)
+    print("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
+    adherent.verifierAdhesionEnCours(chemins['dossierCM'])
 
+""" Finalisation du travail et écriture dans les fichiers adhoc """
+io.export(nvllesAdhesions,chemins)
