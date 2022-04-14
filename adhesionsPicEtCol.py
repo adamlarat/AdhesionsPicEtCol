@@ -51,16 +51,16 @@ toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 helloAsso_np = io.lireFichierHelloAsso(fichierHelloAsso)
 ### Nb de nouvelles adhésions à traitées
 Nb_nvo       = np.shape(helloAsso_np)[0]-1
-print(" *************************************")
-print(" Traitement des nouvelles adhésions...")
-print(" *************************************")
+print("*************************************")
+print("Traitement des nouvelles adhésions...")
+print("*************************************")
 nvllesAdhesions = []
 ### Suppression des fichiers anciens si nécessaire
 io.emptyDir(chemins['Telechargements'])
 ### Parcours de la liste téléchargées sur helloasso.com
 for i in range(1,Nb_nvo+1):
     adherent = Adherent(i,helloAsso_np)
-    print("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
+    adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.mettreAJour(toutesLesAdhesions)
     # Ne rien faire si l'adhésion a déjà été enregistrée et stockée dans les adhésions en cours
     if not adherent.adhesionEnCours:
@@ -68,16 +68,16 @@ for i in range(1,Nb_nvo+1):
         adherent.formaterPourExport()
         nvllesAdhesions += (adherent,)
 
-print(" **************************************")
-print(" Vérification des adhésions en cours...")
-print(" **************************************")
+""" Vérification des adhésions en cours """
 ### Nb d'adhésions en cours
 enCours_np = toutesLesAdhesions[0]['tableau']
 Nb_enCours = np.shape(enCours_np)[0]-1
+dejaAdherents = []
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(i,enCours_np)
-    print("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
+    adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.verifierAdhesionEnCours(chemins['dossierCM'])
+    dejaAdherents += (adherent,)
 
 """ Finalisation du travail et écriture dans les fichiers adhoc """
-io.export(nvllesAdhesions,chemins)
+io.export(nvllesAdhesions,dejaAdherents,chemins)

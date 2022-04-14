@@ -72,6 +72,7 @@ class Adherent:
         self.lienCertif    = mf.getEntry(adhesions,i,'LIEN_CERTIF')  #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         """ Autres données nécessaires au traitement """
         self.erreur          = 0
+        self.messageErreur   = ""
         self.adhesionEnCours = False
         self.ancienAdherent  = False
         self.historique      = []
@@ -79,6 +80,12 @@ class Adherent:
         self.derniereSaison  = {'indice':-1,'nom':''}
         """ Formater les données """
         self.formaterAttributs()
+        
+    def noter(self,*args):
+        for arg in args:
+            self.messageErreur += str(arg)+"\n"
+        print(*args)
+        return
 
     def formaterAttributs(self):
         ### Permet de conserver les accents pour l'export à la fin, tout en assurant de bonnes recherches
@@ -134,15 +141,15 @@ class Adherent:
             if np.size(newMatch) > 0:
                 lastMatch = np.where(ddnOld[match[newMatch]] == self.dateNaissance)[0]
                 if np.size(lastMatch) == 0:
-                    print(" * ERROR_"+self.statut+": J'ai trouvé",
+                    self.noter(" * ERROR_"+self.statut+": J'ai trouvé",
                             self.nom+' '+self.prenom,
                             " mais pas avec la bonne date de naissance !")
-                    print(" * - Fichier                    :",adhesionsOld['fichier'])
-                    print(" * - Nouvelle date de naissance :",self.dateNaissance)
-                    print(" * - Ancienne date de naissance :",ddnOld[match[newMatch]][0])
+                    self.noter(" * - Fichier                    :",adhesionsOld['fichier'])
+                    self.noter(" * - Nouvelle date de naissance :",self.dateNaissance)
+                    self.noter(" * - Ancienne date de naissance :",ddnOld[match[newMatch]][0])
                     self.erreur += 1
                 elif np.size(lastMatch) > 1:
-                    print(" * ERROR_"+self.statut+": j'ai trouvé", np.size(lastMatch),
+                    self.noter(" * ERROR_"+self.statut+": j'ai trouvé", np.size(lastMatch),
                             'personnes appelées',self.nom,self.prenom,
                             'nées le',self.dateNaissance,
                             "dans le fichier ",adhesionsOld['fichier']," !")
@@ -157,16 +164,16 @@ class Adherent:
             déclaré
         """
         if (self.statut in ['EXT','4MS']) and self.typeAdhesion[:3] == 'LIC':
-            print(" * INFO_"+self.statut+":","l'adhérent·e se déclare Extérieur/4MOIS mais a payé la licence")
-            print(" *           Je passe le statut temporairement en 'NVO'")
+            self.noter(" * INFO_"+self.statut+":","l'adhérent·e se déclare Extérieur/4MOIS mais a payé la licence")
+            self.noter(" *           Je passe le statut temporairement en 'NVO'")
             self.statut = 'NVO'
         if self.statut != 'EXT' and self.typeAdhesion[:3] == 'EXT':
-            print(" * INFO_"+self.statut+":","l'adhérent·e veut une licence mais a payé comme extérieur!")
-            print(" *           Je passe le statut temporairement en 'EXT'")
+            self.noter(" * INFO_"+self.statut+":","l'adhérent·e veut une licence mais a payé comme extérieur!")
+            self.noter(" *           Je passe le statut temporairement en 'EXT'")
             self.statut = 'EXT'
         if self.statut != '4MS' and self.typeAdhesion[:3] == '4MS':
-            print(" * ERROR_"+self.statut+":","l'adhérent·e a payé une licence 4 mois mais demande à être",self.statut,"!")
-            print(" * TYPE_ADHESION = ",self.typeAdhesion)
+            self.noter(" * ERROR_"+self.statut+":","l'adhérent·e a payé une licence 4 mois mais demande à être",self.statut,"!")
+            self.noter(" * TYPE_ADHESION = ",self.typeAdhesion)
             self.erreur += 1
         return
 
@@ -186,8 +193,8 @@ class Adherent:
         self.adhesionEnCours = (self.historique[0] >= 0)
         if self.ancienAdherent:
             indice = self.derniereSaison['indice']
-            print(" * INFO : Adhérent·e trouvé dans la base de donnée !")
-            print("          Dernière adhésion, saison",self.derniereSaison['nom'],
+            self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
+            self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
                           ", ligne ",self.historique[indice])
             self.derniereAdhesion = Adherent(self.historique[indice],
                                              toutesLesAdhesions[indice]['tableau'])
@@ -200,7 +207,7 @@ class Adherent:
             self.certifOK = self.derniereAdhesion.certifOK
             self.assurage = self.derniereAdhesion.assurage
         if (self.statut == 'RNV' and (not self.ancienAdherent)):
-            print(' * ERROR_RNV: ',
+            self.noter(' * ERROR_RNV: ',
                     self.nom,self.prenom,
                     "est introuvable dans les fichiers CSV des années précédentes")
             self.erreur += 1
@@ -231,43 +238,43 @@ class Adherent:
         ### Mise-à-jour du statut
         if self.statut == 'RNV':
             if self.derniereAdhesion.statut == 'EXT':
-                print(" * INFO_RNV: l'adhérent·e",self.prenom,self.nom,"était EXT l'an dernier et demande un RNV")
-                print(" *           C'est probablement une MUT!")
+                self.noter(" * INFO_RNV: l'adhérent·e",self.prenom,self.nom,"était EXT l'an dernier et demande un RNV")
+                self.noter(" *           C'est probablement une MUT!")
                 self.statut = 'MUT'
         elif self.statut == 'MUT':
             if self.derniereAdhesion.statut != 'EXT':
-                print(" * ERROR_MUT: l'adhérent·e",self.prenom,self.nom,"était",self.derniereAdhesion.statut,"l'an dernier et demande une MUT")
-                print(" *            Cette configuration n'est pas possible !")
+                self.noter(" * ERROR_MUT: l'adhérent·e",self.prenom,self.nom,"était",self.derniereAdhesion.statut,"l'an dernier et demande une MUT")
+                self.noter(" *            Cette configuration n'est pas possible !")
                 self.erreur += 1
         elif self.statut == 'NVO':
             self.statut = 'MUT' if self.derniereAdhesion.statut == 'EXT' else 'RNV'
-            print(" * INFO_NVO: l'adhérent·e",self.prenom,self.nom," était",self.derniereAdhesion.statut,"l'an dernier")
-            print(" *            Son statut est passé de 'NVO' à",self.statut)
+            self.noter(" * INFO_NVO: l'adhérent·e",self.prenom,self.nom," était",self.derniereAdhesion.statut,"l'an dernier")
+            self.noter(" *            Son statut est passé de 'NVO' à",self.statut)
         elif  self.statut == '4MS':
             if self.derniereAdhesion.statut == 'EXT':
-                print(" * INFO_4MS: l'adhérent·e",self.prenom,self.nom,"était EXT l'an dernier et demande une licence 4MS")
-                print(" *           Il faut d'abord demander une MUTation!")
+                self.noter(" * INFO_4MS: l'adhérent·e",self.prenom,self.nom,"était EXT l'an dernier et demande une licence 4MS")
+                self.noter(" *           Il faut d'abord demander une MUTation!")
                 self.statut = 'MUT'
         elif not(self.statut in ['EXT','ERR']):
-            print(' * ERROR_STAT: Unknown self.statut: '+self.statut)
+            self.noter(' * ERROR_STAT: Unknown self.statut: '+self.statut)
             self.erreur += 1
         ### Info concernant les licences 4 mois
         if self.derniereAdhesion.statut == '4MS':
-            print(" * INFO_4MS: l'adhérent·e",self.prenom,self.nom,"était 4MS l'an dernier")
-            print(" *           Bien faire attention que sa licence est arrivée à terme !")
+            self.noter(" * INFO_4MS: l'adhérent·e",self.prenom,self.nom,"était 4MS l'an dernier")
+            self.noter(" *           Bien faire attention que sa licence est arrivée à terme !")
         return
 
     def miseAJourNumLicence(self):
         if self.numLicence == '' and self.derniereAdhesion.numLicence != '' :
             self.numLicence = self.derniereAdhesion.numLicence
         elif re.sub(r'[^0-9]','',self.numLicence) != re.sub(r'[^0-9]','',self.derniereAdhesion.numLicence):
-            print(" * ERROR_"+self.statut+": licence numbers are different!")
-            print(" * - Numéro de Licence l'an dernier :",self.derniereAdhesion.numLicence)
-            print(" * - Numéro de Licence cette année  :",self.numLicence)
+            self.noter(" * ERROR_"+self.statut+": licence numbers are different!")
+            self.noter(" * - Numéro de Licence l'an dernier :",self.derniereAdhesion.numLicence)
+            self.noter(" * - Numéro de Licence cette année  :",self.numLicence)
             self.numLicence = 'NUMLIC_INCONNU'
             self.erreur += 1
         elif self.numLicence == '' and (self.statut == 'EXT' or self.statut == 'MUT'):
-            print(' * INFO_'+self.statut+': Missing Licence Number!')
+            self.noter(' * INFO_'+self.statut+': Missing Licence Number!')
         return
 
     def miseAJourDateCertif(self):
@@ -284,7 +291,7 @@ class Adherent:
             self.certifOK   = 'EXT'
             self.dateCertif = 'EXT'
             if self.lienLicence == '':
-                print(' * INFO_EXT: Lien vers la licence manquant!')
+                self.noter(' * INFO_EXT: Lien vers la licence manquant!')
                 return
             else:
                 fileName = wget.download(self.lienLicence,bar=None)
@@ -306,9 +313,9 @@ class Adherent:
                     Jour     = dateFile[6:]
                     self.dateCertif = Jour+'/'+Mois+'/'+Annee
                 else:
-                    print(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
-                    print(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
-                    print(' * Raison : ',fichier)
+                    self.noter(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
+                    self.noter(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
+                    self.noter(' * Raison : ',fichier)
                     self.erreur    += 1
                     self.certifOK   = 'NON'
                     self.dateCertif = '01/01/1970'
@@ -328,8 +335,8 @@ class Adherent:
         if jours>=0 and jours//365 < 3 :
             self.certifOK = 'OUI'
         else:
-            print(" * ERROR_DAT: La date du certificat n'a pas moins de trois ans !")
-            print(" * Date_Certif : ",self.dateCertif)
+            self.noter(" * ERROR_DAT: La date du certificat n'a pas moins de trois ans !")
+            self.noter(" * Date_Certif : ",self.dateCertif)
             self.erreur += 1
             self.certifOK = 'NON'
         return
@@ -349,19 +356,19 @@ class Adherent:
                 mois   = dateFichier[4:6]
                 jour   = dateFichier[6:]
                 if self.dateCertif != jour+'/'+mois+'/'+annee:
-                    print(' * ERROR_'+self.statut+' :',
+                    self.noter(' * ERROR_'+self.statut+' :',
                         'la date du certificat enregistrée ne correspond pas avec celle du fichier trouvé')
-                    print(' * DATE_CERTIF :',self.dateCertif)
-                    print(' * FICHIER :',fichier)
-                    print(' * DATE DU :',jour+'/'+mois+'/'+annee)
+                    self.noter(' * DATE_CERTIF :',self.dateCertif)
+                    self.noter(' * FICHIER :',fichier)
+                    self.noter(' * DATE DU :',jour+'/'+mois+'/'+annee)
                     self.erreur += 1
         else:
-            print(' * ERROR_'+self.statut+' :', fichier)
+            self.noter(' * ERROR_'+self.statut+' :', fichier)
             self.erreur += 1
         """ Vérifier le numéro de licence """
         if self.numLicence == '':
-            print(' * WARNING:',"l'adhérent·e"+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
-            print('            Aller voir sur https://licence2.fsgt.org')
+            self.noter(' * WARNING:',"l'adhérent·e"+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
+            self.noter('            Aller voir sur https://licence2.fsgt.org')
             self.erreur += 1
         return
 

@@ -151,7 +151,9 @@ def toLibreOfficeDate(date_str):
 """ Autres fonctions           """
 """ ************************** """
 
-def today():
+def today(form='human'):
     """ Renvoie la date d'aujourd'hui sous la forme 'JJ/MM/AAAA'"""
     auj = datetime.now()
+    if form == 'computer':
+        return "%04i%02i%02i"%(auj.year,auj.month,auj.day)
     return "%02i/%02i/%04i"%(auj.day,auj.month,auj.year)

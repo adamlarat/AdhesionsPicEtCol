@@ -142,25 +142,9 @@ def ecrireFichiersFSGT(adherents,exportDict):
         else:
             print(adherent.toString("FSGT"), file=exportDict[adherent.statut][-1])
             exportDict[adherent.statut][0] += 1
-    return nExport
+    exportDict['nExport'] = nExport
+    return exportDict
 
-def printToScreen(exportDict,N,nExport,telechargements):
-    print("--------------------------------------------------")
-    print("Nombre total d'adhérent·e·s chargées : %03i"%N)
-    print("Nombre d'adhérent·e·s exporté·e·s    : %03i"%nExport)
-    print("--------------------------------------------------")
-    total = 0
-    for statut in exportDict:
-        nStatut = exportDict[statut][0]
-        print(statut+" = %03i"%nStatut)
-        total += nStatut
-    print("--------------------------------------------------")
-    print("TOT = %03i"%total)
-    nCertifs,nLicences = compteDocuments(telechargements)
-    print("--------------------------------------------------")
-    print("Certifs  = %03i"%nCertifs)
-    print("Licences = %03i"%nLicences)
-    print("--------------------------------------------------")
 
 def nomFichierImportFSGT(parametresRobot):
     """ Cette fonction lit les paramètres stockés dans le fichier
@@ -190,17 +174,17 @@ def miseAJourAdhesionsEnCours(adherents,adhesionsEnCours):
     os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
 
 
-def export(adherents,chemins):
+def export(nvllesAdhesions,dejaAdherents,chemins):
     """ Cette fonction finalise le travail sur les adhésions :
         - Écriture dans les fichiers
             * {mutations,renouvellements,nouvos,erreurs}.csv
             * AdhesionsPicEtCol_saisonEnCours.ods
         - Vérifier qu'on a bien le bon nombre de documents téléchargés
-        - Résumer le travail effectué à l'écran
+        - Résumer le travail effectué à l'écran et par mail
         - Mise-à-jour du fichier parametresRobot.txt
     """
     # Écriture dans le fichier ODS des adhésions en cours
-    miseAJourAdhesionsEnCours(adherents,chemins['adhesionsEnCoursODS'])
+    miseAJourAdhesionsEnCours(nvllesAdhesions,chemins['adhesionsEnCoursODS'])
     # ouverture des fichiers
     fichierImport,nLots = nomFichierImportFSGT(chemins['parametresRobot'])
     importFSGT      = open(fichierImport,mode='w')
@@ -213,12 +197,13 @@ def export(adherents,chemins):
         'NVO': [0,fichierImport,importFSGT],
         '4MS': [0,fichierImport,importFSGT],
         'MUT': [0,'mutations.csv',mutations],
-        'EXT': [0,]
+        'EXT': [0,],
+        'nExport': 0
     }
     # écriture dans les fichiers
-    nExport = ecrireFichiersFSGT(adherents,exportDict)
-    # Résumé à l'écran
-    printToScreen(exportDict,len(adherents),nExport,chemins['Telechargements'])
+    exportDict = ecrireFichiersFSGT(nvllesAdhesions,exportDict)
+    # Écrire les logs, affichage écran et e-mails
+    logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict)
     # fermeture des fichiers et suppression de fichiers vides
     for statut in ["ERR", "MUT"]:
         exportDict[statut][-1].close()
@@ -248,8 +233,88 @@ def compteDocuments(telechargements):
     return nCertifs, nLicences
 
 
-"""Fonction pour supprimer un dossier en le vidant préalablement """
 def emptyDir(dirname):
+    """Fonction pour supprimer un dossier en le vidant préalablement """
     if os.path.exists(dirname):
         shutil.rmtree(dirname)
     os.mkdir(dirname)
+
+
+def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict):
+    # Constitution du message de log et pour le mail 
+    message = ""
+    message+= "*******************\n"
+    message+= "Nouvelles adhésions\n"
+    message+= "*******************\n"
+    for adherent in nvllesAdhesions:
+        message += adherent.messageErreur
+    
+    message += "----------------- RÉSUMÉ -------------------------\n"
+    message += "Nombre total d'adhérent·e·s chargées : %03i\n"%len(nvllesAdhesions)
+    message += "Nombre d'adhérent·e·s exporté·e·s    : %03i\n"%exportDict['nExport']
+    message += "--------------------------------------------------\n"
+    total = 0
+    for statut in exportDict:
+        if type(exportDict[statut])==list:
+            nStatut = exportDict[statut][0]
+            message += statut+" = %03i\n"%nStatut
+            total += nStatut
+    message += "--------------------------------------------------\n"
+    message += "TOT = %03i\n"%total
+    nCertifs,nLicences = compteDocuments(chemins['Telechargements'])
+    message += "----------- DOCUMENTS TROUVÉS --------------------\n"
+    message += "Certifs  = %03i\n"%nCertifs
+    message += "Licences = %03i\n"%nLicences
+    message += "--------------------------------------------------\n"
+    message += "\n"
+    
+    message+= "***********************************\n"
+    message+= "Vérification des adhésions en cours\n"
+    message+= "***********************************\n"
+    err = 0
+    for adherent in dejaAdherents:
+        if adherent.erreur > 0 :
+            message += adherent.messageErreur
+            err     += 1
+    message += "----------------- RÉSUMÉ -------------------------\n"
+    message += "Nombre d'erreurs à traiter parmi les adhésions en cours : %03i\n"%err
+    message += "Nombre total d'adhérent·e·s à Pic&Col : %03i\n"%(len(nvllesAdhesions)+len(dejaAdherents))
+    message += "--------------------------------------------------\n"
+    message += "\n"
+    
+    baseDeDonneesODS = chemins['adhesionsEnCoursODS']
+    importFSGT       = chemins['dossierLogs']+exportDict['RNV'][1]
+    mutations        = chemins['dossierLogs']+exportDict['MUT'][1]
+    erreurs          = chemins['dossierLogs']+exportDict['ERR'][1]
+    message+= "************************\n"
+    message+= "Que reste-t-il à faire ?\n"
+    message+= "************************\n"
+    message+= " 1) Gérer les erreurs d'inscription. Ça peut être :\n"
+    message+= "    * des documents manquants (Certif, licence, ...)\n"
+    message+= "    * une typo dans l'inscription\n"
+    message+= "    * autre (partie à compléter !)\n"
+    message+= "   Bien penser à mettre à jour :\n"
+    message+= "    * les adhésions courantes : "+baseDeDonneesODS+"\n"
+    message+= "    * les fichiers d'export   : "+importFSGT+" ou "+mutations+"\n"
+    message+= " 2) Vérifier les certificats médicaux et les licences téléchargées dans\n"
+    message+= "    "+chemins['Telechargements']+"\n"
+    message+= " 3) Quand tout est OK, les déplacer dans "+chemins['dossierCM']+"\n"
+    message+= " 4) S'il y a des mutations, prendre le fichier "+mutations
+    message+=    " et l'envoyer à fsgt38@wanadoo.fr pour effectuer les mutations\n"
+    message+= " 5) Lorsque les erreurs et les mutations sont traitées, "
+    message+=     "rajouter le contenu des fichiers\n"
+    message+= "     "+mutations+"\n"
+    message+= "     et\n"
+    message+= "     "+erreurs+"\n"
+    message+= "     dans\n"
+    message+= "     "+importFSGT+"\n"
+    message+= " 6) Importer le fichier "+importFSGT
+    message+=     " sur le serveur https://licence2.fsgt.org\n"
+    message+= "    et mettre à jour les cases correpondantes de la colonne 'LICENCE_OK' de\n"
+    message+= "    "+baseDeDonneesODS+"\n"
+
+    log = open(chemins['dossierLogs']+mf.today('computer')+'_nouvellesAdhesions.log','w')
+    log.write(message)
+    log.close()
+    
+    
