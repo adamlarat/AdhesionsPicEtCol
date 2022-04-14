@@ -10,6 +10,7 @@ import numpy as np
 import os, shutil
 import myFunctions as mf
 import pylocalc as pyods
+import sendMail as sm
 
 def lireFichierHelloAsso(fichierHelloAsso):
     """ Cette fonction reformate les données téléchargées depuis HelloAsso.com
@@ -313,8 +314,14 @@ def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict):
     message+= "    et mettre à jour les cases correpondantes de la colonne 'LICENCE_OK' de\n"
     message+= "    "+baseDeDonneesODS+"\n"
 
+    # Stocke le message dans les logs
     log = open(chemins['dossierLogs']+mf.today('computer')+'_nouvellesAdhesions.log','w')
     log.write(message)
     log.close()
+    
+    # L'envoie à la liste des emails concernés
+    login = sm.mailLogin(chemins['loginContact'])
+    for adresse in open(chemins['listeEmails']):
+        sm.envoyerEmail(login,"[ROBOT_LICENCE] Point sur les adhésions Pic&Col",adresse.strip(),message)
     
     

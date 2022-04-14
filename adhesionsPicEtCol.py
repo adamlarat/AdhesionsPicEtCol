@@ -43,7 +43,9 @@ chemins = {
     'Telechargements'     : dossierLogs + "Telechargements/",
     'adhesionsEnCoursODS' : adhesionsEnCours,
     'adhesionsEnCoursCSV' : os.path.splitext(adhesionsEnCours)[0] + ".csv",
-    'parametresRobot'     : "parametresRobot.txt"
+    'parametresRobot'     : "parametresRobot.txt",
+    'loginContact'        : 'Emails/login_contact.txt',
+    'listeEmails'          : 'Emails/liste_emails.txt'
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
@@ -68,6 +70,9 @@ for i in range(1,Nb_nvo+1):
         adherent.formaterPourExport()
         nvllesAdhesions += (adherent,)
 
+print("**************************************")
+print("Vérification des adhésions en cours...")
+print("**************************************")
 """ Vérification des adhésions en cours """
 ### Nb d'adhésions en cours
 enCours_np = toutesLesAdhesions[0]['tableau']
