@@ -29,4 +29,4 @@ libreoffice --convert-to csv:"Text - txt - csv (StarCalc)":59,34,76 --outdir ${d
 wget -q --load-cookies cookies-helloasso-com.txt "https://www.helloasso.com/admin/handler/reports.ashx?type=Details&from=${debut}&includeSubpages=1&period=MONTH&domain=HelloAsso&trans=Adhesions&format=CSV&orgSlug=pic-col&formSlug=adhesion-saison-${saison}&formType=Membership" -O ${fichierHelloAsso}
 
 ## Traitement des adhésions par python
-python adhesionsPicEtCol.py ${fichierHelloAsso} ${fichierCourant} 
+python adhesionsPicEtCol.py ${fichierHelloAsso} ${fichierCourant} | tee ${dossierLogs}/${today}_nouvellesAdhesions.log 

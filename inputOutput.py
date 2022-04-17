@@ -131,9 +131,7 @@ def chargerToutesLesAdhesions(chemins):
 
 def ecrireFichiersFSGT(adherents,exportDict):
     ### Remplissage des fichiers
-    nExport = 0
     for adherent in adherents:
-        nExport += 1
         # Exporter au Format FSGT pour import dans le serveur de licences
         if adherent.erreur > 0:
             print(adherent.toString("FSGT"), file=exportDict["ERR"][-1])
@@ -143,7 +141,6 @@ def ecrireFichiersFSGT(adherents,exportDict):
         else:
             print(adherent.toString("FSGT"), file=exportDict[adherent.statut][-1])
             exportDict[adherent.statut][0] += 1
-    exportDict['nExport'] = nExport
     return exportDict
 
 
@@ -175,7 +172,7 @@ def miseAJourAdhesionsEnCours(adherents,adhesionsEnCours):
     os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
 
 
-def export(nvllesAdhesions,dejaAdherents,chemins):
+def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
     """ Cette fonction finalise le travail sur les adhésions :
         - Écriture dans les fichiers
             * {mutations,renouvellements,nouvos,erreurs}.csv
@@ -198,13 +195,12 @@ def export(nvllesAdhesions,dejaAdherents,chemins):
         'NVO': [0,fichierImport,importFSGT],
         '4MS': [0,fichierImport,importFSGT],
         'MUT': [0,'mutations.csv',mutations],
-        'EXT': [0,],
-        'nExport': 0
+        'EXT': [0,]
     }
     # écriture dans les fichiers
     exportDict = ecrireFichiersFSGT(nvllesAdhesions,exportDict)
     # Écrire les logs, affichage écran et e-mails
-    logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict)
+    logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs)
     # fermeture des fichiers et suppression de fichiers vides
     for statut in ["ERR", "MUT"]:
         exportDict[statut][-1].close()
@@ -241,7 +237,7 @@ def emptyDir(dirname):
     os.mkdir(dirname)
 
 
-def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict):
+def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
     # Constitution du message de log et pour le mail 
     message = ""
     message+= "*******************\n"
@@ -251,19 +247,22 @@ def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict):
         message += adherent.messageErreur
     
     message += "----------------- RÉSUMÉ -------------------------\n"
-    message += "Nombre total d'adhérent·e·s chargées : %03i\n"%len(nvllesAdhesions)
-    message += "Nombre d'adhérent·e·s exporté·e·s    : %03i\n"%exportDict['nExport']
+    message += "Nombre total d'adhérent·e·s chargées : %03i\n"%compteurs['helloAsso']
+    message += "Nombre de nouvelles adhésions        : %03i\n"%len(nvllesAdhesions)
+    if len(nvllesAdhesions) != compteurs['nouveaux']:
+        message += "Attention cette quantité diffère du compteur 'nouveaux' : %03i\n"%compteurs['nouveaux']
+    message += "Nombre d'adhésions déjà traitées     : %03i\n"%compteurs['deja']
     message += "--------------------------------------------------\n"
     total = 0
     for statut in exportDict:
-        if type(exportDict[statut])==list:
-            nStatut = exportDict[statut][0]
-            message += statut+" = %03i\n"%nStatut
-            total += nStatut
+        nStatut = exportDict[statut][0]
+        message += statut+" = %03i\n"%nStatut
+        total += nStatut
     message += "--------------------------------------------------\n"
     message += "TOT = %03i\n"%total
     nCertifs,nLicences = compteDocuments(chemins['Telechargements'])
     message += "----------- DOCUMENTS TROUVÉS --------------------\n"
+    message += "Dossier  = "+chemins['Telechargements']+"\n"
     message += "Certifs  = %03i\n"%nCertifs
     message += "Licences = %03i\n"%nLicences
     message += "--------------------------------------------------\n"
@@ -277,7 +276,14 @@ def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict):
         if adherent.erreur > 0 :
             message += adherent.messageErreur
             err     += 1
+    nCertifs,nLicences = compteDocuments(chemins['dossierCM'])
+    message += "----------- DOCUMENTS TROUVÉS --------------------\n"
+    message += "Dossier  = "+chemins['dossierCM']+"\n"
+    message += "Certifs  = %03i\n"%nCertifs
+    message += "Licences = %03i\n"%nLicences
+    message += "--------------------------------------------------\n"
     message += "----------------- RÉSUMÉ -------------------------\n"
+    message += "Nombre d'adhésion en cours vérifiées : %03i\n"%compteurs['enCours']
     message += "Nombre d'erreurs à traiter parmi les adhésions en cours : %03i\n"%err
     message += "Nombre total d'adhérent·e·s à Pic&Col : %03i\n"%(len(nvllesAdhesions)+len(dejaAdherents))
     message += "--------------------------------------------------\n"
@@ -314,10 +320,10 @@ def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict):
     message+= "    et mettre à jour les cases correpondantes de la colonne 'LICENCE_OK' de\n"
     message+= "    "+baseDeDonneesODS+"\n"
 
-    # Stocke le message dans les logs
-    log = open(chemins['dossierLogs']+mf.today('computer')+'_nouvellesAdhesions.log','w')
-    log.write(message)
-    log.close()
+    print("******************************")
+    print(" Résumé ")
+    print("******************************")
+    print(message)
     
     # L'envoie à la liste des emails concernés
     login = sm.mailLogin(chemins['loginContact'])

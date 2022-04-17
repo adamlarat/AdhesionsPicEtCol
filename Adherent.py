@@ -83,7 +83,8 @@ class Adherent:
         
     def noter(self,*args):
         for arg in args:
-            self.messageErreur += str(arg)+"\n"
+            self.messageErreur += str(arg)
+        self.messageErreur += "\n"
         print(*args)
         return
 
@@ -91,8 +92,8 @@ class Adherent:
         ### Permet de conserver les accents pour l'export à la fin, tout en assurant de bonnes recherches
         self.nomInitial    = self.nom
         self.prenomInitial = self.prenom
-        self.nom           = mf.supprimerCaracteresSpeciaux(self.nom).upper()
-        self.prenom        = mf.supprimerCaracteresSpeciaux(self.prenom).title()
+        self.nom           = mf.supprimerCaracteresSpeciaux(self.nom.upper())
+        self.prenom        = mf.supprimerCaracteresSpeciaux(self.prenom.title())
         self.genre         = self.genre[:1] ### Première lettre uniquement
         self.adresse       = self.adresse.title()
         self.ville         = self.ville.title()

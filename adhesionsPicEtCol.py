@@ -45,22 +45,24 @@ chemins = {
     'adhesionsEnCoursCSV' : os.path.splitext(adhesionsEnCours)[0] + ".csv",
     'parametresRobot'     : "parametresRobot.txt",
     'loginContact'        : 'Emails/login_contact.txt',
-    'listeEmails'          : 'Emails/liste_emails.txt'
+    'listeEmails'         : 'Emails/liste_emails.txt'
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
 ### Lecture du CSV téléchargé sur helloasso.com. Stockage dans une structure numpy.
 helloAsso_np = io.lireFichierHelloAsso(fichierHelloAsso)
 ### Nb de nouvelles adhésions à traitées
-Nb_nvo       = np.shape(helloAsso_np)[0]-1
+nb_helloAsso = np.shape(helloAsso_np)[0]-1
 print("*************************************")
 print("Traitement des nouvelles adhésions...")
 print("*************************************")
 nvllesAdhesions = []
+nb_nvo  = 0
+nb_deja = 0
 ### Suppression des fichiers anciens si nécessaire
 io.emptyDir(chemins['Telechargements'])
 ### Parcours de la liste téléchargées sur helloasso.com
-for i in range(1,Nb_nvo+1):
+for i in range(1,nb_helloAsso+1):
     adherent = Adherent(i,helloAsso_np)
     adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.mettreAJour(toutesLesAdhesions)
@@ -69,6 +71,9 @@ for i in range(1,Nb_nvo+1):
         adherent.telechargerDocuments(chemins)
         adherent.formaterPourExport()
         nvllesAdhesions += (adherent,)
+        nb_nvo += 1
+    else: 
+        nb_deja += 1
 
 print("**************************************")
 print("Vérification des adhésions en cours...")
@@ -78,11 +83,19 @@ print("**************************************")
 enCours_np = toutesLesAdhesions[0]['tableau']
 Nb_enCours = np.shape(enCours_np)[0]-1
 dejaAdherents = []
+nb_enCours = 0
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(i,enCours_np)
     adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.verifierAdhesionEnCours(chemins['dossierCM'])
     dejaAdherents += (adherent,)
+    nb_enCours += 1
+    
+compteurs = {
+    'helloAsso' : nb_helloAsso,
+    'nouveaux'  : nb_nvo,
+    'deja'      : nb_deja,
+    'enCours'   : nb_enCours}
 
 """ Finalisation du travail et écriture dans les fichiers adhoc """
-io.export(nvllesAdhesions,dejaAdherents,chemins)
+io.export(nvllesAdhesions,dejaAdherents,chemins,compteurs)
