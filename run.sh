@@ -28,5 +28,7 @@ libreoffice --convert-to csv:"Text - txt - csv (StarCalc)":59,34,76 --outdir ${d
 ## Téléchargement du fichier HelloAsso
 wget -q --load-cookies cookies-helloasso-com.txt "https://www.helloasso.com/admin/handler/reports.ashx?type=Details&from=${debut}&includeSubpages=1&period=MONTH&domain=HelloAsso&trans=Adhesions&format=CSV&orgSlug=pic-col&formSlug=adhesion-saison-${saison}&formType=Membership" -O ${fichierHelloAsso}
 
-## Traitement des adhésions par python
-python adhesionsPicEtCol.py ${fichierHelloAsso} ${fichierCourant} | tee ${dossierLogs}/${today}_nouvellesAdhesions.log 
+## Traitement des adhésions par python3 (>= 3.8 pour pylocalc)
+python3 adhesionsPicEtCol.py ${fichierHelloAsso} ${fichierCourant} | tee ${dossierLogs}/${today}_nouvellesAdhesions.log 
+
+## Rescan des fichiers par Nextcloud quand on est sur le serveur

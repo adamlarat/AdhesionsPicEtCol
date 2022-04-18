@@ -106,6 +106,7 @@ def chargerToutesLesAdhesions(chemins):
     saison                    = chemins['saison']
     toutesLesAdhesions = []
     while os.path.exists(fichierAdhesionsCourantes):
+        print("Chargement des adhésions de la saison "+saison+" !")
         adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
         adhesions_np = formaterTable(adhesions_np)
         noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.upper())
