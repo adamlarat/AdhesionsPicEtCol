@@ -25,6 +25,7 @@ aux titres des colonnes stockées dans le fichiers d'adhérents Pic&Col (et par 
 dans l'ordre.
 """
 titreFSGT = {
+    ### 'attribut'    : 'ENTETE_COLONNE',
     'dateInscription' : 'DATE_INSCRIPTION',
     'licenceOK'       : 'LICENCE_OK',
     ### -------- Début Format FSGT ---------------
@@ -58,18 +59,60 @@ titreFSGT = {
     'assurage'        : 'ASSURAGE',
     'contactUrgence'  : 'URGENCE'
 }
+exportWeb = {
+    "Date d'inscription" : 'dateInscription',
+    "Licence en cours ?" : 'licenceOK',
+    "Nom"                : 'nom',
+    "Prénom"             : 'prenom',
+    "Date de naissance"  : 'dateNaissance',
+    "Genre"              : 'genre',
+    "Adresse"            : 'adresse',
+    "Code Postal"        : 'codePostal',
+    "Ville"              : 'ville',
+    "Assurance"          : 'assurance',
+    "Téléphone"          : 'telephone',
+    "E-mail"             : 'email',
+    "Numéro de Licence"  : 'numLicence',
+    "Type licence FSGT"  : 'typeLicence',
+    "Certifical OK ?"    : 'certifOK',
+    "Date du dernier certificat" : 'dateCertif',
+    "Type d'adhésion"    : "typeAdhesion",
+    "Statut à Pic&Col"   : 'statut',
+    "Numéro d'urgence"   : 'contactUrgence'
+}
 
 
 class Adherent:
 
-    def __init__(self,i,adhesions):
-        """ Récupérations des données à exporter vers le fichier de gestion des adhésions Pic&Col, dans l'ordre des colonnes """
-        for attribut in titreFSGT:
-            setattr(self,attribut,mf.getEntry(adhesions,i,titreFSGT[attribut]))
-        """ Autres données récupérées depuis HelloAsso """
-        self.lienLicence   = mf.getEntry(adhesions,i,'LIEN_LICENCE') #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
-        self.clubLicence   = mf.getEntry(adhesions,i,'CLUB_LICENCE')
-        self.lienCertif    = mf.getEntry(adhesions,i,'LIEN_CERTIF')  #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+    def __init__(self,nom='',prenom='',dateNaissance='',adhesions=[],ligne=0,afficherErreur=True):
+        if len(adhesions) > 0:
+            """ Si un fichier de gestion des adhésions de Pic&Col est fourni, 
+                Récupérations des données nécessaires, indiquée dans le 
+                dictionnaire titreFSGT """
+            for attribut in titreFSGT:
+                setattr(self,attribut,mf.getEntry(adhesions,ligne,titreFSGT[attribut]))
+            """ Autres données récupérées depuis HelloAsso """
+            self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE')
+            self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
+            self.lienCertif    = mf.getEntry(adhesions,ligne,'LIEN_CERTIF') 
+            """ Formater les données """
+            self.formaterAttributs()
+        else : 
+            """ Si non, initialiser à rien """
+            for attribut in titreFSGT:
+                setattr(self,attribut,"")
+            self.lienLicence   = ""
+            self.clubLicence   = ""
+            self.lienCertif    = ""
+            """ Puis indiquer nom, prénom et date de naissance"""
+            self.nom           = nom
+            self.prenom        = prenom
+            self.dateNaissance = dateNaissance
+        """ Si True, alors les notifications seront affichées à l'écran.
+            Si False, elles seront uniquement stockés dans la chaine de caractères
+            self.messageErreur """
+        self.afficherErreur=afficherErreur
+
         """ Autres données nécessaires au traitement """
         self.erreur          = 0
         self.messageErreur   = ""
@@ -78,14 +121,14 @@ class Adherent:
         self.historique      = []
         self.premiereSaison  = {'indice':-1,'nom':''}
         self.derniereSaison  = {'indice':-1,'nom':''}
-        """ Formater les données """
-        self.formaterAttributs()
+        self.documents       = []
         
     def noter(self,*args):
         for arg in args:
             self.messageErreur += str(arg)
         self.messageErreur += "\n"
-        print(*args)
+        if self.afficherErreur :
+            print(*args)
         return
 
     def formaterAttributs(self):
@@ -105,8 +148,6 @@ class Adherent:
         ### Modification des adresses pour le téléchargement des documents joints
         self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
-        ### Valeurs par défaut pour certains champs
-        self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
         return
 
     def formaterPourExport(self):
@@ -114,9 +155,14 @@ class Adherent:
         self.nom           = self.nomInitial.upper()
         self.prenom        = self.prenomInitial.title()
         ### Valeurs par défaut pour certains champs
-        self.licenceOK     = 'EXT'      if self.statut == 'EXT' else 'NON'
-        self.assurance     = 'EXT'      if self.statut == 'EXT' else 'OUI'
-        self.typeLicence   = 'EXT'      if self.statut == 'EXT' else 'SAIS' if self.statut == '4MS' else 'OMNI'
+        if self.licenceOK == "":
+            self.licenceOK     = 'EXT'      if self.statut == 'EXT' else 'NON'
+        if self.assurance == "":
+            self.assurance     = 'EXT'      if self.statut == 'EXT' else 'OUI'
+        if self.typeLicence == "":
+            self.typeLicence   = 'EXT'      if self.statut == 'EXT' else 'SAIS' if self.statut == '4MS' else 'OMNI'
+        if self.assurage == '':
+            self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
         ### Ajouter des doubles quotes pour certains champs
         for attribut in titreFSGT:
             if attribut in ['nom','prenom','adresse','codePostal','ville','telephone','email']:
@@ -178,27 +224,47 @@ class Adherent:
             self.erreur += 1
         return
 
-    def mettreAJour(self,toutesLesAdhesions):
-        self.verifierTarif()
+    def construireHistorique(self,toutesLesAdhesions):
         ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
         nSaisons = len(toutesLesAdhesions)
         for i in range(nSaisons):
             self.historique    += (self.trouveAdhesion(toutesLesAdhesions[i]),)
             if self.historique[i] >=0:
                 self.ancienAdherent = True
-                if self.premiereSaison['indice'] < 0:
-                    self.premiereSaison['indice'] = i
-                    self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
-                self.derniereSaison['indice'] = i
-                self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
+                if self.derniereSaison['indice'] < 0:
+                    self.derniereSaison['indice'] = i
+                    self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
+                self.premiereSaison['indice'] = i
+                self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
         self.adhesionEnCours = (self.historique[0] >= 0)
+        return self
+    
+    def completerInfoPlusRecentes(self,toutesLesAdhesions):
+        nSaisons = len(toutesLesAdhesions)
+        for attribut in titreFSGT:
+            i = 0
+            while(getattr(self,attribut) == '' and i<nSaisons):
+                setattr(self,attribut,mf.getEntry(toutesLesAdhesions[i]['tableau'],
+                                                  self.historique[i],
+                                                  titreFSGT[attribut]))    
+                i += 1
+        dossierCM = toutesLesAdhesions[self.derniereSaison['indice']]['dossierCM']
+        erreur = self.trouveCertif(dossierCM)
+        if erreur != '': 
+            print(" ERROR !!! Pas trouvé de document associé !")
+            print(" RAISON : ",erreur)
+            print(" DOSSIER de Recherche : ",dossierCM)
+        return self
+        
+
+    def mettreAJour(self,toutesLesAdhesions):
         if self.ancienAdherent:
             indice = self.derniereSaison['indice']
             self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
             self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
                           ", ligne ",self.historique[indice])
-            self.derniereAdhesion = Adherent(self.historique[indice],
-                                             toutesLesAdhesions[indice]['tableau'])
+            self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
+                                             ligne=self.historique[indice])
         ### Mettre à jour les données si c'est un ancien adhérent non en cours
         if (self.ancienAdherent and (not self.adhesionEnCours)):
             self.miseAJourStatut()
@@ -305,9 +371,10 @@ class Adherent:
             if self.lienCertif == '':
                 ### Trouver le certificat déjà existant
                 oldCertifDir   = chemins['dossierCM'].replace(chemins['saison'],self.derniereSaison['nom'])
-                trouve,fichier = self.trouveCertif(oldCertifDir)
-                if trouve:
-                    shutil.copy2(oldCertifDir+'/'+fichier,telechargements)
+                erreur = self.trouveCertif(oldCertifDir)
+                if erreur == '':
+                    fichier = self.documents[-1]
+                    shutil.copy2(fichier,telechargements)
                     dateFile = fichier.split('_')[1]
                     Annee    = dateFile[:4]
                     Mois     = dateFile[4:6]
@@ -349,9 +416,10 @@ class Adherent:
             * Concordance des dates
             * Le numéro de licence a été rappatrié depuis le serveur de licence
         """
-        trouve,fichier = self.trouveCertif(dossierCM)
-        if trouve:
+        erreur = self.trouveCertif(dossierCM)
+        if erreur == '':
             if self.statut != 'EXT':
+                fichier     = self.documents[-1]
                 dateFichier = fichier.split('_')[1]
                 annee  = dateFichier[:4]
                 mois   = dateFichier[4:6]
@@ -364,7 +432,7 @@ class Adherent:
                     self.noter(' * DATE DU :',jour+'/'+mois+'/'+annee)
                     self.erreur += 1
         else:
-            self.noter(' * ERROR_'+self.statut+' :', fichier)
+            self.noter(' * ERROR_'+self.statut+' :', erreur)
             self.erreur += 1
         """ Vérifier le numéro de licence """
         if self.numLicence == '':
@@ -384,10 +452,13 @@ class Adherent:
                     if (self.statut != 'EXT' and fname[:7] == 'Certif_')\
                        or \
                        (self.statut == 'EXT' and fname[:7] == 'Licence'):
-                        return True,fname
+                        self.documents += oldCertifDir+fname,
+                        return ''
                     else:
-                        return False,'Document trouvé mais ne correspond pas au statut : '+fname
-        return False,'Aucun document trouvé pour '+self.prenom+' '+self.nom
+                        self.erreur += 1
+                        return 'Document trouvé mais ne correspond pas au statut : '+fname
+        self.erreur += 1
+        return 'Aucun document trouvé pour '+self.prenom+' '+self.nom
 
 
     def toString(self,form='ALL'):
@@ -395,6 +466,13 @@ class Adherent:
         if form == 'FSGT':
             for attribut in list(titreFSGT)[2:24]:
                 chaine += getattr(self,attribut)+';'
+        if form == 'HTML':
+            chaine += "<ul>\n"
+            for item in exportWeb:
+                chaine += "<li> <strong> "+item+" : </strong> "+getattr(self,exportWeb[item])+"\n"
+            for doc in self.documents:
+                chaine += "<li> <strong> documents joints : </strong> "+doc
+            chaine += "</ul>"
         else:
             for attribut in titreFSGT:
                 chaine += getattr(self,attribut)+';'

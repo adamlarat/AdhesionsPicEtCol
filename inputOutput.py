@@ -104,9 +104,9 @@ def chargerToutesLesAdhesions(chemins):
         Cette fonction renvoie alors une liste de dictionnaires pour chaque saison."""
     fichierAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
     saison                    = chemins['saison']
+    saison0                   = saison
     toutesLesAdhesions = []
     while os.path.exists(fichierAdhesionsCourantes):
-        print("Chargement des adhésions de la saison "+saison+" !")
         adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
         adhesions_np = formaterTable(adhesions_np)
         noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.upper())
@@ -121,7 +121,8 @@ def chargerToutesLesAdhesions(chemins):
                                'prenoms':prenoms,
                                'ddn':ddn,
                                'tableau':adhesions_np,
-                               'fichier':fichierAdhesionsCourantes},
+                               'fichier':fichierAdhesionsCourantes,
+                               'dossierCM':chemins['dossierCM'].replace(saison0,saison)},
         # Reculer d'une saison
         annee       = int(saison.split("-")[0])-1
         nvlleSaison = str(annee)+"-"+str(annee+1)
