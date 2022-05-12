@@ -33,6 +33,10 @@ else:
             ddn=valeur.strip()
         else:
             print("Nom de variable inconnu : ",variable.upper(),valeur,arg)
+        
+print("**********************************************************")
+print("Nom : "+nom,"Prenom : "+prenom,"Date de Naissance : "+ddn)
+print("**********************************************************")
 
 saison=mf.saison()
 
