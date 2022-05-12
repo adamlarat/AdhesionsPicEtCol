@@ -62,14 +62,18 @@ titreFSGT = {
 
 class Adherent:
 
-    def __init__(self,i,adhesions):
+    def __init__(self,nom='',prenom='',dateNaissance='',adhesions=[],ligne=0):
+        self.nom           = nom
+        self.prenom        = prenom
+        self.dateNaissance = dateNaissance
         """ Récupérations des données à exporter vers le fichier de gestion des adhésions Pic&Col, dans l'ordre des colonnes """
-        for attribut in titreFSGT:
-            setattr(self,attribut,mf.getEntry(adhesions,i,titreFSGT[attribut]))
-        """ Autres données récupérées depuis HelloAsso """
-        self.lienLicence   = mf.getEntry(adhesions,i,'LIEN_LICENCE') #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
-        self.clubLicence   = mf.getEntry(adhesions,i,'CLUB_LICENCE')
-        self.lienCertif    = mf.getEntry(adhesions,i,'LIEN_CERTIF')  #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+        if len(adhesions) > 0:
+            for attribut in titreFSGT:
+                setattr(self,attribut,mf.getEntry(adhesions,ligne,titreFSGT[attribut]))
+            """ Autres données récupérées depuis HelloAsso """
+            self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE') #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+            self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
+            self.lienCertif    = mf.getEntry(adhesions,ligne,'LIEN_CERTIF')  #.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         """ Autres données nécessaires au traitement """
         self.erreur          = 0
         self.messageErreur   = ""
@@ -105,8 +109,6 @@ class Adherent:
         ### Modification des adresses pour le téléchargement des documents joints
         self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
-        ### Valeurs par défaut pour certains champs
-        self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
         return
 
     def formaterPourExport(self):
@@ -114,9 +116,14 @@ class Adherent:
         self.nom           = self.nomInitial.upper()
         self.prenom        = self.prenomInitial.title()
         ### Valeurs par défaut pour certains champs
-        self.licenceOK     = 'EXT'      if self.statut == 'EXT' else 'NON'
-        self.assurance     = 'EXT'      if self.statut == 'EXT' else 'OUI'
-        self.typeLicence   = 'EXT'      if self.statut == 'EXT' else 'SAIS' if self.statut == '4MS' else 'OMNI'
+        if self.licenceOK == "":
+            self.licenceOK     = 'EXT'      if self.statut == 'EXT' else 'NON'
+        if self.assurance == "":
+            self.assurance     = 'EXT'      if self.statut == 'EXT' else 'OUI'
+        if self.typeLicence == "":
+            self.typeLicence   = 'EXT'      if self.statut == 'EXT' else 'SAIS' if self.statut == '4MS' else 'OMNI'
+        if self.assurage == '':
+            self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
         ### Ajouter des doubles quotes pour certains champs
         for attribut in titreFSGT:
             if attribut in ['nom','prenom','adresse','codePostal','ville','telephone','email']:
@@ -178,8 +185,7 @@ class Adherent:
             self.erreur += 1
         return
 
-    def mettreAJour(self,toutesLesAdhesions):
-        self.verifierTarif()
+    def construireHistorique(self,toutesLesAdhesions):
         ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
         nSaisons = len(toutesLesAdhesions)
         for i in range(nSaisons):
@@ -192,13 +198,17 @@ class Adherent:
                 self.derniereSaison['indice'] = i
                 self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
         self.adhesionEnCours = (self.historique[0] >= 0)
+        return
+        
+
+    def mettreAJour(self,toutesLesAdhesions):
         if self.ancienAdherent:
             indice = self.derniereSaison['indice']
             self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
             self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
                           ", ligne ",self.historique[indice])
-            self.derniereAdhesion = Adherent(self.historique[indice],
-                                             toutesLesAdhesions[indice]['tableau'])
+            self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
+                                             ligne=self.historique[indice])
         ### Mettre à jour les données si c'est un ancien adhérent non en cours
         if (self.ancienAdherent and (not self.adhesionEnCours)):
             self.miseAJourStatut()

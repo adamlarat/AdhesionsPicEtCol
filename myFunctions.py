@@ -157,3 +157,10 @@ def today(form='human'):
     if form == 'computer':
         return "%04i%02i%02i"%(auj.year,auj.month,auj.day)
     return "%02i/%02i/%04i"%(auj.day,auj.month,auj.year)
+
+def saison():
+    auj = datetime.now()
+    if auj.month < 9 :
+        return str(auj.year-1)+"-"+str(auj.year)
+    else:
+        return str(auj.year)+"-"+str(auj.year+1)

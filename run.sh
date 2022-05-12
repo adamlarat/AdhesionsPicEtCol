@@ -40,6 +40,8 @@ else
   
   ## Traitement des adhésions par python3 (>= 3.8 pour pylocalc)
   sudo -u $user python3 adhesionsPicEtCol.py ${fichierHelloAsso} ${fichierCourant} | tee ${dossierLogs}/${today}_nouvellesAdhesions.log 
+  ## Mise-à-jour du CSV
+  sudo -u $user libreoffice --convert-to csv:"Text - txt - csv (StarCalc)":59,34,76 --outdir ${dossierAdhesions}/${saison} ${fichierCourant}
   
   ## Rescan des fichiers par Nextcloud quand on est sur le serveur
   chown www-data:www-data -R ${fichierCSV} ${dossierLogs}

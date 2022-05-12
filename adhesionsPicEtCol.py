@@ -63,8 +63,10 @@ nb_deja = 0
 io.emptyDir(chemins['Telechargements'])
 ### Parcours de la liste téléchargées sur helloasso.com
 for i in range(1,nb_helloAsso+1):
-    adherent = Adherent(i,helloAsso_np)
+    adherent = Adherent(adhesions=helloAsso_np,ligne=i)
     adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
+    adherent.verifierTarif()
+    adherent.construireHistorique(toutesLesAdhesions)
     adherent.mettreAJour(toutesLesAdhesions)
     # Ne rien faire si l'adhésion a déjà été enregistrée et stockée dans les adhésions en cours
     if not adherent.adhesionEnCours:
@@ -85,7 +87,7 @@ Nb_enCours = np.shape(enCours_np)[0]-1
 dejaAdherents = []
 nb_enCours = 0
 for i in range(1,Nb_enCours+1):
-    adherent = Adherent(i,enCours_np)
+    adherent = Adherent(adhesions=enCours_np,ligne=i)
     adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.verifierAdhesionEnCours(chemins['dossierCM'])
     dejaAdherents += (adherent,)
