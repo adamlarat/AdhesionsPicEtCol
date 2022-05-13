@@ -21,13 +21,12 @@
     <tbody>
       <?php
         if(!empty($_POST)){
+              $command = "python monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
               echo "<ul><li> OokK ! ".
                    "<li> NOM : ".$_POST['nom'].
                    "<li> Prénom : ".$_POST['prenom'].
                    "<li> Date de Naissance : ".$_POST['ddn'].
                    "</ul>";
-               $command = "python monadhesion.py NOM=".$_POST['nom']." PRENOM=".$_POST['prenom']." DDN=".$_POST['ddn'];
-               //$command = 'python Essai/some.py truc';
                $output  = array();
                exec($command,$output);
                foreach ($output as $line) {

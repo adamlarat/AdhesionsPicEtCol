@@ -241,6 +241,9 @@ class Adherent:
     
     def completerInfoPlusRecentes(self,toutesLesAdhesions):
         nSaisons = len(toutesLesAdhesions)
+        # self.nom = ''
+        # self.prenom = ''
+        # self.ddn = ''
         for attribut in titreFSGT:
             i = 0
             while(getattr(self,attribut) == '' and i<nSaisons):
