@@ -21,26 +21,12 @@
     <tbody>
       <?php
         if(!empty($_POST)){
-              $command = "python monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
-              echo "<ul><li> OokK ! ".
-                   "<li> NOM : ".$_POST['nom'].
-                   "<li> Prénom : ".$_POST['prenom'].
-                   "<li> Date de Naissance : ".$_POST['ddn'].
-                   "</ul>";
-               $output  = array();
-               exec($command,$output);
-               foreach ($output as $line) {
-                 echo $line."<br/>";
-               }
-               /*
-                $handle = popen("python3 monadhesion.py NOM=".$_POST['nom']." PRENOM=".$_POST['prenom']." DDN=".$_POST['ddn'], 'r');
-                while(!feof($handle)) {
-                    $buffer = fgets($handle);
-                    echo "$buffer<br/>\n";
-                    ob_flush();flush();
-                }
-                pclose($handle);
-                */
+          $command = "python monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
+          $output  = array();
+          exec($command,$output);
+          foreach ($output as $line) {
+            echo $line."<br/>";
+          }
         }
         else {
           echo '<tr>Procéder à la recherche en renseignant au moins un des champs ci-dessus</tr>';

@@ -9,6 +9,7 @@ import sys
 import myFunctions as mf
 import inputOutput as io
 from Adherent import Adherent
+import sendMail as sm
 
 nom=""
 prenom=""
@@ -34,16 +35,17 @@ else:
         else:
             print("Nom de variable inconnu : ",variable.upper(),valeur,arg)
         
-print("**********************************************************")
-print("Nom : "+nom,"Prenom : "+prenom,"Date de Naissance : "+ddn)
-print("**********************************************************")
+# print("**********************************************************")
+# print("Nom : "+nom,"Prenom : "+prenom,"Date de Naissance : "+ddn)
+# print("**********************************************************")
 
 saison=mf.saison()
 
 chemins = {
-    'saison' : saison,
+    'saison'              : saison,
     'adhesionsEnCoursCSV' : "../"+saison+"/AdhesionsPicEtCol_"+saison+".csv",
-    'dossierCM' : '../'+saison+'/CertificatsMedicaux/'
+    'dossierCM'           : '../'+saison+'/CertificatsMedicaux/',
+    'loginContact'        : 'Emails/login_contact.txt'
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
@@ -51,4 +53,13 @@ toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 adherent = Adherent(nom=nom,prenom=prenom,dateNaissance=ddn,afficherErreur=False)
 adherent = adherent.construireHistorique(toutesLesAdhesions)
 adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions)
-print(adherent.toString('HTML'))
+login = sm.mailLogin(chemins['loginContact'])
+sm.envoyerEmail(login,
+                sujet="Ton adhésion Pic&Col",
+                pour=adherent.email,
+                corps=adherent.toString('plain'),
+                html =adherent.toString('HTML'),
+                pjointes=adherent.documents)
+    
+print("Les informations te concernant ont été envoyées à l'adresse ",
+      sm.maskEmail(adherent.email))

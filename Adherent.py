@@ -241,6 +241,7 @@ class Adherent:
         if not self.ancienAdherent:
             print("Pas d'adhérent·e trouvé·e dans notre base de donnée avec \
                   ce nom, ce prénom et cette date de naissance.")
+            print(self.nom,self.prenom,self.dateNaissance)
             sys.exit(-1)
         return self
     
@@ -472,17 +473,20 @@ class Adherent:
         if form == 'FSGT':
             for attribut in list(titreFSGT)[2:24]:
                 chaine += getattr(self,attribut)+';'
-        if form == 'HTML':
+            chaine = chaine[:-1] ### pour enlever le dernier ';'
+        elif form == 'HTML':
             chaine += "<ul>\n"
             for item in exportWeb:
                 chaine += "<li> <strong> "+item+" : </strong> "+getattr(self,exportWeb[item])+"\n"
-            for doc in self.documents:
-                chaine += "<li> <strong> documents joints : </strong> "+doc
             chaine += "</ul>"
+        elif form == 'plain':
+            for item in exportWeb:
+                chaine += item+" : "+getattr(self,exportWeb[item])+"\n"
         else:
             for attribut in titreFSGT:
                 chaine += getattr(self,attribut)+';'
-        return chaine[:-1] ### pour enlever le dernier ';'
+            chaine = chaine[:-1] ### pour enlever le dernier ';'
+        return chaine 
 
     def toODS(self):
         data = []
