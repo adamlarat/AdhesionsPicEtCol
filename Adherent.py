@@ -18,6 +18,7 @@ import numpy as np
 import wget, os, shutil
 import re
 from datetime import datetime
+import sys
 
 """
 On crée ici un dictionnaire qui relie les noms des attributs de la classe Adherent
@@ -237,26 +238,28 @@ class Adherent:
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
         self.adhesionEnCours = (self.historique[0] >= 0)
+        if not self.ancienAdherent:
+            print("Pas d'adhérent·e trouvé·e dans notre base de donnée avec \
+                  ce nom, ce prénom et cette date de naissance.")
+            sys.exit(-1)
         return self
     
     def completerInfoPlusRecentes(self,toutesLesAdhesions):
-        nSaisons = len(toutesLesAdhesions)
-        # self.nom = ''
-        # self.prenom = ''
-        # self.ddn = ''
-        for attribut in titreFSGT:
-            i = 0
-            while(getattr(self,attribut) == '' and i<nSaisons):
-                setattr(self,attribut,mf.getEntry(toutesLesAdhesions[i]['tableau'],
-                                                  self.historique[i],
-                                                  titreFSGT[attribut]))    
-                i += 1
-        dossierCM = toutesLesAdhesions[self.derniereSaison['indice']]['dossierCM']
+        indice = self.derniereSaison['indice']
+        ligne  = self.historique[indice]
+        """ On cherche d'abord le certif pour pouvoir remplacer le nom de rercherche ensuite """
+        dossierCM = toutesLesAdhesions[indice]['dossierCM']
         erreur = self.trouveCertif(dossierCM)
         if erreur != '': 
             print(" ERROR !!! Pas trouvé de document associé !")
             print(" RAISON : ",erreur)
             print(" DOSSIER de Recherche : ",dossierCM)
+        """ Remplacement de tous les attributs par ceux stockés dans le *.ods """
+        for attribut in titreFSGT:
+            if getattr(self,attribut) == '':
+                setattr(self,attribut,mf.getEntry(toutesLesAdhesions[indice]['tableau'],
+                                                  ligne,
+                                                  titreFSGT[attribut]))    
         return self
         
 
