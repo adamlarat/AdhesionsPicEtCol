@@ -8,7 +8,7 @@ then
    echo "À bientôt !"
    exit 255
 else
-  user = $1
+  user=$1
   ## Gestion de la date et de la saison en cours
   today=$(date '+%Y%m%d-%H%M%S')
   mois=$(date '+%m')
