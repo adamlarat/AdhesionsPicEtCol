@@ -21,7 +21,7 @@
     <tbody>
       <?php
         if(!empty($_POST)){
-          $command = "python monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
+          $command = "python3 monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
           $output  = array();
           exec($command,$output);
           foreach ($output as $line) {
@@ -29,7 +29,7 @@
           }
         }
         else {
-          echo '<tr>Procéder à la recherche en renseignant au moins un des champs ci-dessus</tr>';
+          echo '<tr>Procéder à la recherche en renseignant tous les champs ci-dessus</tr>';
         }
       ?>
     </tbody>
