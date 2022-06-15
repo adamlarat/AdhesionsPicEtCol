@@ -4,9 +4,9 @@
   <meta charset="utf-8"/>
   <title>Recherche</title>
   <style>
-    table{width:100%;border-collapse:collapse}
-    table tr,table th,table td{border:1px solid black;}
-    table tr td{text-align:center;padding:1em;}
+    input {width: 17%;height: 2em;font-size: 20px;}
+    #instructions {font-size: 20px;}
+    #reponse {font-size: 20px;}
   </style>
 </head>
 <body>
@@ -24,12 +24,14 @@
           $command = "python3 monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
           $output  = array();
           exec($command,$output);
+          echo "<br/>\n<div id=reponse>\n";
           foreach ($output as $line) {
-            echo $line."<br/>";
+            echo $line."<br/>\n";
           }
+          echo "</div>\n";
         }
         else {
-          echo '<tr>Procéder à la recherche en renseignant tous les champs ci-dessus</tr>';
+          echo "<br/>\n<div id=instructions>\n  Procéder à la recherche en renseignant les champs ci-dessus\n</div>";
         }
       ?>
     </tbody>
