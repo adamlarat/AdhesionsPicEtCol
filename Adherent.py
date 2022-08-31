@@ -18,7 +18,6 @@ import numpy as np
 import wget, os, shutil
 import re
 from datetime import datetime
-import sys
 
 """
 On crée ici un dictionnaire qui relie les noms des attributs de la classe Adherent
@@ -81,22 +80,78 @@ exportWeb = {
     "Statut à Pic&Col"   : 'statut',
     "Numéro d'urgence"   : 'contactUrgence'
 }
-
+jsonToObject = {
+    ### 'attribut'    : 'titre JSON',
+    'dateInscription' : 'order/date',
+    'licenceOK'       : '',
+    ### -------- Début Format FSGT ---------------
+    'nom'             : 'user/lastName',
+    'prenom'          : 'user/firstName',
+    'dateNaissance'   : 'custom/Date de naissance',
+    'genre'           : 'custom/Genre',
+    'adresse'         : 'custom/Adresse',
+    'add2'            : '',
+    'add3'            : '',
+    'codePostal'      : 'custom/Code Postal',
+    'ville'           : 'custom/Ville',
+    'assurance'       : '',
+    'telDom'          : '',
+    'telPro'          : '',
+    'telephone'       : 'custom/Numéro de téléphone',
+    'email'           : 'custom/Email',
+    'numLicence'      : 'custom/Numéro de la licence FSGT',
+    'typeLicence'     : '',
+    'numClub'         : '',
+    'champ1'          : '',
+    'champ2'          : '',
+    'champ3'          : '',
+    'champ4'          : '',
+    'dateCertif'      : 'custom/Date du Certificat Médical',
+    ### -------- Fin Format FSGT ---------------
+    'certifOK'        : '',
+    'typeAdhesion'    : 'name',
+    'tarif'           : 'amount',
+    'statut'          : "custom/Statut de l'inscription",
+    'assurage'        : '',
+    'contactUrgence'  : "custom/Téléphone d'un contact",
+    ### -------- Fin tableau exporté. Purs attributs de la classe Adhérents ------------------
+    'lienCertif'      : "custom/Certificat médical",
+    'lienLicence'     : "custom/Copie de la licence",
+    'clubLicence'     : "custom/Club FSGT"
+}
 
 class Adherent:
 
-    def __init__(self,nom='',prenom='',dateNaissance='',adhesions=[],ligne=0,afficherErreur=True):
+    def __init__(self,nom='',prenom='',dateNaissance='',adhesions=[],ligne=0,json={},afficherErreur=True):
         if len(adhesions) > 0:
             """ Si un fichier de gestion des adhésions de Pic&Col est fourni, 
                 Récupérations des données nécessaires, indiquée dans le 
                 dictionnaire titreFSGT """
             for attribut in titreFSGT:
-                setattr(self,attribut,mf.getEntry(adhesions,ligne,titreFSGT[attribut]))
+                valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
+                if 'date' in attribut:
+                    setattr(self,attribut,mf.verifierDate(valeur))
+                else:
+                    setattr(self,attribut,valeur)
             """ Autres données récupérées depuis HelloAsso """
             self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE')
             self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
             self.lienCertif    = mf.getEntry(adhesions,ligne,'LIEN_CERTIF') 
             """ Formater les données """
+            self.formaterAttributs()
+        elif len(json) > 0:
+            """ Si un fichier de gestion des adhésions de Pic&Col est fourni sous format JSON, 
+                Récupérations des données nécessaires, indiquées dans le 
+                dictionnaire jsonToObject """
+            for attribut in jsonToObject:
+                valeur = mf.fromJson(json,jsonToObject[attribut])
+                if 'date' in attribut:
+                    setattr(self,attribut,mf.verifierDate(valeur))
+                else:
+                    setattr(self,attribut,valeur)
+            """ Formater les données """
+            ### l'API HelloAsso envoie les tarifs en centimes
+            self.tarif = self.tarif//100
             self.formaterAttributs()
         else : 
             """ Si non, initialiser à rien """
@@ -108,8 +163,8 @@ class Adherent:
             """ Puis indiquer nom, prénom et date de naissance"""
             self.nom           = nom
             self.prenom        = prenom
-            self.dateNaissance = dateNaissance
-        """ Si True, alors les notifications seront affichées à l'écran.
+            self.dateNaissance = mf.verifierDate(dateNaissance)
+            """ Si True, alors les notifications seront affichées à l'écran.
             Si False, elles seront uniquement stockés dans la chaine de caractères
             self.messageErreur """
         self.afficherErreur=afficherErreur
@@ -146,6 +201,8 @@ class Adherent:
         self.numLicence    = re.sub(r'[^0-9]','',self.numLicence)
         self.typeAdhesion  = mf.typeAdhesion(self.typeAdhesion)
         self.statut        = mf.statut(self.statut)
+        if(self.dateCertif == ''):
+            self.dateCertif = '01/01/1970'
         ### Modification des adresses pour le téléchargement des documents joints
         self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
@@ -186,6 +243,15 @@ class Adherent:
         ligne  = -1
         if np.size(match) > 0:
             newMatch = np.where(prenomsOld[match]==self.prenom)[0]
+            if (self.dateNaissance == '') and (np.size(newMatch) == 1):
+                ### Cas extrêmement rare où l'adhérent·e n'a pas fourni sa DdN 
+                ### et qu'on la retrouve dans les anciennes adhésions
+                self.noter(" * INFO_"+self.statut+": l'adhérent·e n'a pas fourni sa date de naissance.",
+                           "je complète avec la base de données :")
+                self.noter(" * - Date de naissance fournie :",self.dateNaissance)
+                self.noter(" * - Date de naissance trouvée :",ddnOld[match[newMatch]][0])
+                self.dateNaissance = ddnOld[match[newMatch]][0]
+                return match[newMatch][0]
             if np.size(newMatch) > 0:
                 lastMatch = np.where(ddnOld[match[newMatch]] == self.dateNaissance)[0]
                 if np.size(lastMatch) == 0:
@@ -219,10 +285,10 @@ class Adherent:
             self.noter(" * INFO_"+self.statut+":","l'adhérent·e veut une licence mais a payé comme extérieur!")
             self.noter(" *           Je passe le statut temporairement en 'EXT'")
             self.statut = 'EXT'
-        if self.statut != '4MS' and self.typeAdhesion[:3] == '4MS':
-            self.noter(" * ERROR_"+self.statut+":","l'adhérent·e a payé une licence 4 mois mais demande à être",self.statut,"!")
+        if (self.typeAdhesion[:3] == '4MS') and (self.statut != '4MS'):
+            self.noter(" * INFO_"+self.statut+":","l'adhérent·e a payé une licence 4 mois. Je change le statut à 4MS !")
             self.noter(" * TYPE_ADHESION = ",self.typeAdhesion)
-            self.erreur += 1
+            self.statut = '4MS'
         return
 
     def construireHistorique(self,toutesLesAdhesions):
@@ -238,11 +304,11 @@ class Adherent:
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
         self.adhesionEnCours = (self.historique[0] >= 0)
-        if not self.ancienAdherent:
-            print("Pas d'adhérent·e trouvé·e dans notre base de donnée avec \
-                  ce nom, ce prénom et cette date de naissance.")
-            print(self.nom,self.prenom,self.dateNaissance)
-            sys.exit(-1)
+        if (not self.ancienAdherent) and self.statut == 'RNV':
+            self.noter(" * ERROR_"+self.statut+":",
+                  "Pas d'adhérent·e trouvé·e dans notre base de donnée avec ce nom, ce prénom et cette date de naissance.")
+            self.noter(self.nom,self.prenom,self.dateNaissance)
+            self.erreur += 1
         return self
     
     def completerInfoPlusRecentes(self,toutesLesAdhesions):
@@ -265,26 +331,24 @@ class Adherent:
         
 
     def mettreAJour(self,toutesLesAdhesions):
-        if self.ancienAdherent:
-            indice = self.derniereSaison['indice']
-            self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
-            self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
-                          ", ligne ",self.historique[indice])
-            self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
-                                             ligne=self.historique[indice])
+        
+        if not self.ancienAdherent:
+            return 
+        
+        indice = self.derniereSaison['indice']
+        self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
+        self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
+                      ", ligne ",self.historique[indice])
+        self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
+                                         ligne=self.historique[indice])
         ### Mettre à jour les données si c'est un ancien adhérent non en cours
-        if (self.ancienAdherent and (not self.adhesionEnCours)):
+        if not self.adhesionEnCours:
             self.miseAJourStatut()
             self.miseAJourNumLicence()
             self.miseAJourDateCertif()
             ### Certif OK et Assurage sont copiés de l'an dernier
             self.certifOK = self.derniereAdhesion.certifOK
             self.assurage = self.derniereAdhesion.assurage
-        if (self.statut == 'RNV' and (not self.ancienAdherent)):
-            self.noter(' * ERROR_RNV: ',
-                    self.nom,self.prenom,
-                    "est introuvable dans les fichiers CSV des années précédentes")
-            self.erreur += 1
         return
 
     def miseAJourStatut(self):
@@ -390,7 +454,7 @@ class Adherent:
                 else:
                     self.noter(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
                     self.noter(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
-                    self.noter(' * Raison : ',fichier)
+                    self.noter(' * Raison : ',erreur)
                     self.erreur    += 1
                     self.certifOK   = 'NON'
                     self.dateCertif = '01/01/1970'
@@ -491,8 +555,11 @@ class Adherent:
     def toODS(self):
         data = []
         for attribut in titreFSGT:
+            valeur = getattr(self,attribut)
             if 'date' in attribut:
-                data += mf.toLibreOfficeDate(getattr(self,attribut)),
+                data += mf.toLibreOfficeDate(valeur),
+            elif type(valeur) == int:
+                data += str(valeur),
             else:
                 data += getattr(self,attribut).replace('"','').strip(),
         return data

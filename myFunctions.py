@@ -27,6 +27,29 @@ def getEntry(adhesions,nLigne,titre):
     else:
         return ''
 
+def fromJson(json,titre):
+    """
+    Cette fonction permet de récupérer une entrée du format Json
+    """
+    chemin = titre.split('/')
+    if len(chemin) == 1:
+        if titre in json.keys():
+            return json[titre]
+    elif chemin[0] == 'custom':
+        if 'customFields' in json.keys():
+            for champ in json['customFields']:
+                if chemin[1] in champ['name']:
+                    return champ['answer']
+    else: 
+        entree = json
+        for c in chemin: 
+            if c in entree.keys():
+                entree = entree[c]
+            else : 
+                return ''
+        return entree
+    return '' 
+
 def getCol(adhesions,titre):
     return np.squeeze(adhesions[:,(adhesions[0]==titre)])
 
@@ -48,7 +71,7 @@ def statut(chaine):
     [Nouveau·elle, Renouvellement, Mutation, Extérieur·e, Licence 4 mois]
     dans l'encodage choisi [NVO,RNV,MUT,EXT,4MS]
     """
-    deb = chaine[:3]
+    deb = chaine.strip()[:3]
     if deb == 'Nou':
         return 'NVO'
     elif deb == 'Ren':
@@ -117,13 +140,44 @@ def format_tel(tel):
             form_tel+=i
     return form_tel[:-1]
 
+def verifierDate(date_str):
+    """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
+    if date_str == '' or date_str == 'EXT':
+        return date_str
+    ### HelloAsso renvoie un format bizarre %Y-%m-%dT%H%M%S.%ns+GMT
+    liste    = date_str.replace('T',' ').replace('.',' ').split(' ')
+    if len(liste) == 1:
+        try:
+            myDate = datetime.strptime(date_str,'%d/%m/%Y')
+        except:
+            print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
+            return ''
+    elif len(liste) == 2:
+        try:
+            myDate = datetime.strptime(date_str,'%d/%m/%Y %H:%M:%S')
+        except:
+            print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
+            return ''
+    elif len(liste) == 3:
+        ### Format de date HelloAsso
+        try:
+            myDate = datetime.strptime(date_str.split('.')[0],'%Y-%m-%dT%H:%M:%S')
+        except:
+            print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
+            return ''
+        return myDate.strftime('%d/%m/%Y %H:%M:%S')
+    else:
+        print('Format de date non conforme :',date_str,". Changée en ''")
+        return ''
+    return date_str
+
 def getDate(myDate):
-    """ Cette fonction prend un date sous forme de chaîne de caractère 'DDMMYYYY'
+    """ Cette fonction prend un date sous forme de chaîne de caractère 'DD/MM/YYYY'
         et retourne un objet de type date correspondant.
         Ainsi les dates peuvent être comparées par des opérateurs booléens (<,>,=,ect..)
     """
-    if myDate == '' or myDate == 'EXT':
-        return date(1970,1,1)
+    if myDate == '' or myDate == 'EXT' or len(myDate.split('/')) != 3:
+        return date(1899,12,30)
     d,m,y = [int(x) for x in myDate.split('/')]
     return date(y,m,d)
 
@@ -146,6 +200,10 @@ def toLibreOfficeDate(date_str):
     fromEpoch = datetime(annee,mois,jour,heures,minutes,secondes)-datetime(1899,12,30)
     return fromEpoch.days+fromEpoch.seconds/86400.0
 
+def apiDate(date):
+    jour,mois,annee = date.split('/')
+    slash = "%2F"
+    return mois+slash+jour+slash+annee
 
 """ ************************** """
 """ Autres fonctions           """
@@ -164,3 +222,15 @@ def saison():
         return str(auj.year-1)+"-"+str(auj.year)
     else:
         return str(auj.year)+"-"+str(auj.year+1)
+
+""" Classe permettant de lire des fichiers de configuration """
+class myLogin:
+    def __init__(self,loginFile):
+        for ligne in open(loginFile,'r'):
+            attribut,valeur = ligne.split('=')
+            attribut = attribut.lower().strip()
+            valeur   = valeur.strip().replace('"',"").replace("'","")
+            if attribut[-4:] == '_int': 
+                valeur = int(valeur)
+                attribut = attribut[:-4]
+            setattr(self,attribut,valeur)

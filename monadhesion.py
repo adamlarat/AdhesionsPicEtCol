@@ -45,7 +45,7 @@ chemins = {
     'saison'              : saison,
     'adhesionsEnCoursCSV' : "../"+saison+"/AdhesionsPicEtCol_"+saison+".csv",
     'dossierCM'           : '../'+saison+'/CertificatsMedicaux/',
-    'loginContact'        : 'Emails/login_contact.txt'
+    'loginContact'        : mf.myLogin('CoffreFort/login_contact.txt')
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
@@ -53,8 +53,7 @@ toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 adherent = Adherent(nom=nom,prenom=prenom,dateNaissance=ddn,afficherErreur=False)
 adherent = adherent.construireHistorique(toutesLesAdhesions)
 adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions)
-login = sm.mailLogin(chemins['loginContact'])
-sm.envoyerEmail(login,
+sm.envoyerEmail(chemins['loginContact'],
                 sujet="Ton adhésion Pic&Col",
                 pour=adherent.email,
                 corps=adherent.toString('plain'),

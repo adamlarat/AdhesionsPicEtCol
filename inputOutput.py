@@ -11,18 +11,50 @@ import os, shutil
 import myFunctions as mf
 import pylocalc as pyods
 import sendMail as sm
+import helloasso_api as hapi
 
-def lireFichierHelloAsso(fichierHelloAsso):
-    """ Cette fonction reformate les données téléchargées depuis HelloAsso.com
-        et les stocke dans une structure numpy"""
-    # Récupération du fichier dans un tableau Numpy
-    adhesions = np.genfromtxt(fichierHelloAsso,delimiter=";",dtype=None,encoding="utf8")
-    # Enlever les doubles quote et supprimer les blancs de début et de fin de chaîne de caractères
-    adhesions = formaterTable(adhesions)
-    # Renommer les titres des colonnes pour simplifier l'export
-    adhesions = remplacerTitresColonnes(adhesions)
-    return adhesions
+""" 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
+    est obsolète. Cette fonction est amenée à disparaître """
+# def lireFichierHelloAsso(fichierHelloAsso):
+#     """ Cette fonction reformate les données téléchargées depuis HelloAsso.com en format CSV
+#         et les stocke dans une structure numpy"""
+#     # Récupération du fichier dans un tableau Numpy
+#     adhesions = np.genfromtxt(fichierHelloAsso,delimiter=";",dtype=None,encoding="utf8")
+#     # Enlever les doubles quote et supprimer les blancs de début et de fin de chaîne de caractères
+#     adhesions = formaterTable(adhesions)
+#     # Renommer les titres des colonnes pour simplifier l'export
+#     adhesions = remplacerTitresColonnes(adhesions)
+#     return adhesions
 
+def recupDonneesHelloAsso(chemins):
+    """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso. 
+        On récupère les données au format JSON (dictionnaire Python)"""
+    api    = hapi.HaApiV5(chemins['loginAPI'].api_base,
+                          chemins['loginAPI'].client_id,
+                          chemins['loginAPI'].client_secret)
+    saison = chemins['saison']
+    debut  = chemins['parametresRobot'].derniere_releve
+    fin    = mf.today()
+
+    apiCall = "/v5/organizations/pic-col/forms/Membership/adhesion-saison-"+saison+\
+        "/items?from="+mf.apiDate(debut)+"&to="+mf.apiDate(fin)+\
+        "&pageSize=100&itemStates=Processed&withDetails=true&sortOrder=Desc&sortField=Date"
+    print(apiCall)
+    reponse    = api.call(apiCall,method="GET").json()
+    data       = reponse['data']
+    pages      = reponse['pagination']
+    totalPages = pages['totalPages']
+    pageIndex  = pages['pageIndex']
+    contToken  = pages['continuationToken']
+    while pageIndex < totalPages:
+        reponse = api.call(apiCall+"&continuationToken="+contToken,method="GET").json()
+        data += reponse['data']
+        pages = reponse['pagination']
+        totalPages = pages['totalPages']
+        pageIndex = pages['pageIndex']
+        contToken = pages['continuationToken']
+    print(len(data))
+    return data
 
 def formaterTable(adhesions):
     """ Une fois les données récupérées dans un tableau numpy, on supprime 
@@ -43,63 +75,65 @@ def formaterTable(adhesions):
     return adhesions
 
 
-def remplacerTitresColonnes(adhesions):
-    """ Cette fonction permet de normaliser les titres des colonnes. 
-        La table suivante donne les correspondance entre ce qui sort 
-        de HelloAsso et le format Pic&Col qui inclus le format FSGT."""
-    pattern_matching = np.array(
-        [
-            ["Numéro", "INDEX"],
-            ["Formule", "TYPE_ADHESION"],
-            ["Montant adhésion", "TARIF"],
-            ["Statut", "PAIEMENT_OK"],
-            ["Moyen de paiement", "MOYEN_PAIEMENT"],
-            ["Nom", "NOM"],
-            ["Prénom", "PRENOM"],
-            ["Date", "DATE_INSCRIPTION"],
-            ["Email", "UNUSED_EMAIL"],
-            ["Date de naissance", "UNUSED_NAISS"],
-            ["Attestation", "FACTURE"],
-            ###%%%%%% Champs Complémentaires. Commencent par un ' ' ! Important ! %%%%%%
-            [" Date de naissance", "NAISS"],
-            [" Genre", "SEXE"],
-            [" Email", "EMAIL"],
-            [" Numéro de téléphone", "TELEPHONE"],
-            [" Adresse", "ADRESSE"],
-            [" Code Postal", "CP"],
-            [" Ville", "VILLE"],
-            [" Statut", "STATUT"],
-            [" Copie", "LIEN_LICENCE"],
-            [" Club", "CLUB_LICENCE"],
-            [" J'étais", "CERTIF_RECONDUIT"],
-            [" Certificat médical de moins", "LIEN_CERTIF"],
-            [" Date du Certificat", "DATE_CERTIF"],
-            [" Numéro de la licence", "NUM_LICENCE"],
-            [" Téléphone d'un contact", "URGENCE"],
-        ]
-    )
-    nCol = np.size(adhesions[0])
-    for i in range(nCol):
-        title = adhesions[0,i]
-        formulaire = False
-        if "Champ additionnel" in title:
-            formulaire = True
-        for pair in pattern_matching:
-            pattern = pair[0]
-            newTitle= pair[1]
-            if (formulaire and (pattern[0] != ' ')):
-                continue
-            if (formulaire     and (pattern in title)) or \
-               (not formulaire and (pattern == title)):
-                   adhesions[0,i] = newTitle
-                   break
-    return adhesions
+""" 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
+    est obsolète. Cette fonction est amenée à disparaître """
+# def remplacerTitresColonnes(adhesions):
+#     """ Cette fonction permet de normaliser les titres des colonnes. 
+#         La table suivante donne les correspondance entre ce qui sort 
+#         de HelloAsso et le format Pic&Col qui inclus le format FSGT."""
+#     pattern_matching = np.array(
+#         [
+#             ["Numéro", "INDEX"],
+#             ["Formule", "TYPE_ADHESION"],
+#             ["Montant adhésion", "TARIF"],
+#             ["Statut", "PAIEMENT_OK"],
+#             ["Moyen de paiement", "MOYEN_PAIEMENT"],
+#             ["Nom", "NOM"],
+#             ["Prénom", "PRENOM"],
+#             ["Date", "DATE_INSCRIPTION"],
+#             ["Email", "UNUSED_EMAIL"],
+#             ["Date de naissance", "UNUSED_NAISS"],
+#             ["Attestation", "FACTURE"],
+#             ###%%%%%% Champs Complémentaires. Commencent par un ' ' ! Important ! %%%%%%
+#             [" Date de naissance", "NAISS"],
+#             [" Genre", "SEXE"],
+#             [" Email", "EMAIL"],
+#             [" Numéro de téléphone", "TELEPHONE"],
+#             [" Adresse", "ADRESSE"],
+#             [" Code Postal", "CP"],
+#             [" Ville", "VILLE"],
+#             [" Statut", "STATUT"],
+#             [" Copie", "LIEN_LICENCE"],
+#             [" Club", "CLUB_LICENCE"],
+#             [" J'étais", "CERTIF_RECONDUIT"],
+#             [" Certificat médical de moins", "LIEN_CERTIF"],
+#             [" Date du Certificat", "DATE_CERTIF"],
+#             [" Numéro de la licence", "NUM_LICENCE"],
+#             [" Téléphone d'un contact", "URGENCE"],
+#         ]
+#     )
+#     nCol = np.size(adhesions[0])
+#     for i in range(nCol):
+#         title = adhesions[0,i]
+#         formulaire = False
+#         if "Champ additionnel" in title:
+#             formulaire = True
+#         for pair in pattern_matching:
+#             pattern = pair[0]
+#             newTitle= pair[1]
+#             if (formulaire and (pattern[0] != ' ')):
+#                 continue
+#             if (formulaire     and (pattern in title)) or \
+#                (not formulaire and (pattern == title)):
+#                    adhesions[0,i] = newTitle
+#                    break
+#     return adhesions
 
 
 def chargerToutesLesAdhesions(chemins):
     """ Cette fonction parcours tous les dossiers présents dans 'dossierAdhesions'
         par ordre décroissant des saisons (2021-2022, puis 2020-2021, etc...)
-        Tant qu'un fichier AdhesionsPicEtCol_${saison}.ods est trouvé, il est 
+        Tant qu'un fichier AdhesionsPicEtCol_${saison}.csv est trouvé, il est 
         chargé en mémoire dans un tableau numpy.
         Cette fonction renvoie alors une liste de dictionnaires pour chaque saison."""
     fichierAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
@@ -146,18 +180,6 @@ def ecrireFichiersFSGT(adherents,exportDict):
     return exportDict
 
 
-def nomFichierImportFSGT(parametresRobot):
-    """ Cette fonction lit les paramètres stockés dans le fichier
-        * parametresRobot.txt
-        les met à jour
-        et renvoie le nom du fichier d'import des nouvelles adhésion
-        sur le serveur de licence licence2.fsgt.org
-    """
-    param = open(parametresRobot,'r')
-    n     = int(param.readline().rstrip().split(';')[1].split('=')[1])
-    param.close()
-    return 'fichier_import_base_licence_2021_Lot%03i.csv'%(n+1),n+1
-
 def miseAJourAdhesionsEnCours(adherents,adhesionsEnCours):
     """ Cette fonction ouvre un document *.ods à l'aide de la librairie Pylocalc.
         Elle y insère toutes les données relatives aux adhérent·e·s
@@ -186,7 +208,8 @@ def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
     # Écriture dans le fichier ODS des adhésions en cours
     miseAJourAdhesionsEnCours(nvllesAdhesions,chemins['adhesionsEnCoursODS'])
     # ouverture des fichiers
-    fichierImport,nLots = nomFichierImportFSGT(chemins['parametresRobot'])
+    nLots           = chemins['parametresRobot'].dernier_lot+1
+    fichierImport   = 'fichier_import_base_licence_2021_Lot%03i.csv'%nLots
     importFSGT      = open(fichierImport,mode='w')
     erreurs         = open('erreurs.csv',mode='w')
     mutations       = open('mutations.csv',mode='w')
@@ -213,8 +236,8 @@ def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
         os.remove(fichierImport)
         nLots -= 1
     # mise-à-jour du fichier de paramètres
-    param = open(chemins['parametresRobot'],'w')
-    param.write('DerniereReleve='+mf.today()+';DernierLot=%i'%nLots)
+    param = open(chemins['fichierParametres'],'w')
+    param.write('derniere_releve='+mf.today()+'\ndernier_lot=%i'%nLots)
     param.close()
 
 def compteDocuments(telechargements):
@@ -328,8 +351,10 @@ def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
     print(message)
     
     # L'envoie à la liste des emails concernés
-    login = sm.mailLogin(chemins['loginContact'])
     for adresse in open(chemins['listeEmails']):
-        sm.envoyerEmail(login,"[ROBOT_LICENCE] Point sur les adhésions Pic&Col",adresse.strip(),message)
+        sm.envoyerEmail(chemins['loginContact'],
+                        "[ROBOT_LICENCE] Point sur les adhésions Pic&Col",
+                        adresse.strip(),
+                        message)
     
     

@@ -11,15 +11,6 @@ from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-class mailLogin:
-    def __init__(self,loginFile):
-        for ligne in open(loginFile,'r'):
-            attribut,valeur = ligne.split('=')
-            attribut = attribut.lower().strip()
-            valeur   = valeur.strip().replace('"',"").replace("'","")
-            if attribut == "port": 
-                valeur = int(valeur)
-            setattr(self,attribut,valeur)
 
 def envoyerEmail(login,sujet,pour,corps,html="",pjointes=[]):
     port        = login.port
@@ -68,4 +59,4 @@ def maskEmail(adresse):
     return '@'.join([mask(part,2,1) for part in adresse.split('@')])
     
 if __name__ == '__main__':
-    envoyerEmail('Emails/login_contact.txt','Essai de sendMail.py','adam@larat.fr','Coucou !')
+    envoyerEmail('CoffreFort/login_contact.txt','Essai de sendMail.py','adam@larat.fr','Coucou !')

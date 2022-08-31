@@ -11,7 +11,7 @@ user@machine: ~/.../Adhesions$ ls
 ``
 
 2. Renseigner les fichiers de config suivants : 
-  * `parametresRobot.txt` : contient une ligne `DerniereReleve=14/04/2022;DernierLot=32`. 
+  * `parametresRobot.txt` : contient la date de la dernière relève sur HelloAsso et le numéro du dernier lot de licence sur le serveur FSGT. 
     C'est la date du dernier relevé HelloAsso et le numéro du dernier lot de licence importé sur le serveur licence2.fsgt.org.
   * `cookies-helloasso-com.txt` : cookie HelloAsso pour effectuer des requêtes. À obtenir depuis votre navigateur. 
   * `Emails/login_contact.txt` : données de connection au serveur SMTP pour l'envoi du résumé du travail par email. Celui-ci doit contenir
