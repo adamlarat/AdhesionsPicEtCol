@@ -3,8 +3,8 @@
 ## Récupération du nom d'utilisateur pour effectuer les tâches
 if [ $# -lt 1 ]
 then
-   echo "Ce script requiert un argument. Vous devez fournir l'utilisateur qui effectuera les tâches !"
-   echo "Usage = ./run.sh user [saison]"
+   echo "Ce script requiert des arguments. Vous devez au moins fournir l'utilisateur qui effectuera les tâches !"
+   echo "Usage = ./run.sh user [saison YYYY-YYYY]"
    echo "À bientôt !"
    exit 255
 else

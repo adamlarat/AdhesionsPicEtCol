@@ -36,7 +36,7 @@ def recupDonneesHelloAsso(chemins):
     debut  = chemins['parametresRobot'].derniere_releve
     fin    = mf.today()
 
-    apiCall = "/v5/organizations/pic-col/forms/Membership/adhesion-saison-"+saison+\
+    apiCall = "/v5/organizations/pic-col/forms/Membership/adhesionsaison-"+saison+\
         "/items?from="+mf.apiDate(debut)+"&to="+mf.apiDate(fin)+\
         "&pageSize=100&itemStates=Processed&withDetails=true&sortOrder=Desc&sortField=Date"
     print(apiCall)
@@ -142,6 +142,8 @@ def chargerToutesLesAdhesions(chemins):
     toutesLesAdhesions = []
     while os.path.exists(fichierAdhesionsCourantes):
         adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
+        if len(np.shape(adhesions_np)) == 1:
+            adhesions_np = adhesions_np[np.newaxis,:]
         adhesions_np = formaterTable(adhesions_np)
         noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.upper())
                                     for nom in mf.getCol(adhesions_np,'NOM')])

@@ -51,7 +51,8 @@ def fromJson(json,titre):
     return '' 
 
 def getCol(adhesions,titre):
-    return np.squeeze(adhesions[:,(adhesions[0]==titre)])
+    res = adhesions[:,(adhesions[0]==titre)]
+    return res.reshape((len(res)))
 
 """ ************************** """
 """ FORMATAGE DES ENTREES """
