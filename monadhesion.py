@@ -35,10 +35,6 @@ else:
         else:
             print("Nom de variable inconnu : ",variable.upper(),valeur,arg)
         
-# print("**********************************************************")
-# print("Nom : "+nom,"Prenom : "+prenom,"Date de Naissance : "+ddn)
-# print("**********************************************************")
-
 saison=mf.saison()
 
 chemins = {
@@ -52,13 +48,33 @@ toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
 adherent = Adherent(nom=nom,prenom=prenom,dateNaissance=ddn,afficherErreur=False)
 adherent = adherent.construireHistorique(toutesLesAdhesions)
-adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions)
-sm.envoyerEmail(chemins['loginContact'],
-                sujet="Ton adhésion Pic&Col",
-                pour=adherent.email,
-                corps=adherent.toString('plain'),
-                html =adherent.toString('HTML'),
-                pjointes=adherent.documents)
+
+### Si l'historique n'est pas vide
+if adherent.ancienAdherent:
+    adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions)
+    sm.envoyerEmail(chemins['loginContact'],
+                    sujet="Ton adhésion Pic&Col",
+                    pour=adherent.email,
+                    corps=adherent.toString('plain'),
+                    html =adherent.toString('HTML'),
+                    pjointes=adherent.documents)
+    print("Les informations te concernant ont été envoyées à l'adresse ",
+                          sm.maskEmail(adherent.email))
+else:
+    print("ERREUR : 0 personnes trouvé·e·s avec ces valeurs renseignées.")
+    print("Nom : "+nom)
+    print("Prenom : "+prenom)
+    print("Date de Naissance : "+ddn)
     
-print("Les informations te concernant ont été envoyées à l'adresse ",
-      sm.maskEmail(adherent.email))
+# print("*************** MAIL ****************")
+# print("Historique = ",adherent.historique)
+# print("Ancient Adherent = ",adherent.ancienAdherent)
+# print("Derniere saison  = ",adherent.derniereSaison)
+# print("Premiere saison  = ",adherent.premiereSaison)
+# print("Adhesion en crs  = ",adherent.adhesionEnCours)
+# print("Pour = ",adherent.email)
+# print("Corps : \n",adherent.toString('plain'))
+# print("PJ = ",adherent.documents)
+# print("Erreurs = ",adherent.messageErreur)
+# print("*************** MAIL ****************")
+

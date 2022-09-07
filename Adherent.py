@@ -255,7 +255,7 @@ class Adherent:
             if np.size(newMatch) > 0:
                 lastMatch = np.where(ddnOld[match[newMatch]] == self.dateNaissance)[0]
                 if np.size(lastMatch) == 0:
-                    self.noter(" * ERROR_"+self.statut+": J'ai trouvé",
+                    self.noter(" * ERROR_"+self.statut+": J'ai trouvé ",
                             self.nom+' '+self.prenom,
                             " mais pas avec la bonne date de naissance !")
                     self.noter(" * - Fichier                    :",adhesionsOld['fichier'])
@@ -318,9 +318,9 @@ class Adherent:
         dossierCM = toutesLesAdhesions[indice]['dossierCM']
         erreur = self.trouveCertif(dossierCM)
         if erreur != '': 
-            print(" ERROR !!! Pas trouvé de document associé !")
-            print(" RAISON : ",erreur)
-            print(" DOSSIER de Recherche : ",dossierCM)
+            self.noter(" ERROR !!! Pas trouvé de document associé !")
+            self.noter(" RAISON : ",erreur)
+            self.noter(" DOSSIER de Recherche : ",dossierCM)
         """ Remplacement de tous les attributs par ceux stockés dans le *.ods """
         for attribut in titreFSGT:
             if getattr(self,attribut) == '':
