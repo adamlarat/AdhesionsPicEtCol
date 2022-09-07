@@ -28,10 +28,19 @@ else:
         variable,valeur = arg.split('=')
         if variable.upper() == 'NOM':
             nom=mf.supprimerCaracteresSpeciaux(valeur.strip().upper())
+            if nom == '':
+                print("Le nom renseigné n'est pas valide: ",valeur)
+                sys.exit(-1)
         elif variable.upper() == "PRENOM":
             prenom=mf.supprimerCaracteresSpeciaux(valeur.strip().title())
+            if prenom == '':
+                print("Le prenom renseigné n'est pas valide: ",valeur)
+                sys.exit(-1)
         elif variable.upper() == "DDN":
-            ddn=valeur.strip()
+            ddn=mf.verifierDate(valeur.strip())
+            if ddn == '':
+                print("La date de naissance renseignée n'est pas valide: ",valeur)
+                sys.exit(-1)
         else:
             print("Nom de variable inconnu : ",variable.upper(),valeur,arg)
         
@@ -65,6 +74,7 @@ else:
     print("Nom : "+nom)
     print("Prenom : "+prenom)
     print("Date de Naissance : "+ddn)
+    sys.exit(-1)
     
 # print("*************** MAIL ****************")
 # print("Historique = ",adherent.historique)
