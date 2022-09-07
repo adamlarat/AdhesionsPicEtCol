@@ -37,7 +37,7 @@ else:
                 print("Le prenom renseigné n'est pas valide: ",valeur)
                 sys.exit(-1)
         elif variable.upper() == "DDN":
-            ddn=mf.verifierDate(valeur.strip())
+            ddn=mf.verifierDate(valeur.strip(),errorOut=False)
             if ddn == '':
                 print("La date de naissance renseignée n'est pas valide: ",valeur)
                 sys.exit(-1)

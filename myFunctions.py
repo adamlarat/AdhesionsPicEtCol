@@ -141,7 +141,7 @@ def format_tel(tel):
             form_tel+=i
     return form_tel[:-1]
 
-def verifierDate(date_str):
+def verifierDate(date_str,errorOut=True):
     """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
     if date_str == '' or date_str == 'EXT':
         return date_str
@@ -151,24 +151,28 @@ def verifierDate(date_str):
         try:
             myDate = datetime.strptime(date_str,'%d/%m/%Y')
         except:
-            print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
+            if errorOut: 
+                print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
             return ''
     elif len(liste) == 2:
         try:
             myDate = datetime.strptime(date_str,'%d/%m/%Y %H:%M:%S')
         except:
-            print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
+            if errorOut: 
+                print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
             return ''
     elif len(liste) == 3:
         ### Format de date HelloAsso
         try:
             myDate = datetime.strptime(date_str.split('.')[0],'%Y-%m-%dT%H:%M:%S')
         except:
-            print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
+            if errorOut: 
+                print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
             return ''
         return myDate.strftime('%d/%m/%Y %H:%M:%S')
     else:
-        print('Format de date non conforme :',date_str,". Changée en ''")
+        if errorOut: 
+            print('Format de date non conforme :',date_str,". Changée en ''")
         return ''
     return date_str
 
