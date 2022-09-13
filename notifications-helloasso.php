@@ -47,15 +47,25 @@
       $jsonFile = file_get_contents("php://input");
       $data     = json_decode($jsonFile);
       if ($data != false) {
-        $prenom = ucfirst(supprimerCaracteresSpeciaux($data->data->payer->firstName));
-        $nom    = strtoupper(supprimerCaracteresSpeciaux($data->data->payer->lastName));
-        $event  = ($data->eventType == "Payment")?"Payment":"Membership";
-        $filename = $prenom."_".$nom."_".$event.".json";
-        if (!file_exists($filename)) {
-          file_put_contents($filename,
-                            json_encode($data,
-                                        JSON_UNESCAPED_UNICODE|
-                                        JSON_UNESCAPED_SLASHES));
+        echo("Eventype = ".$data->eventType."\n");
+        if ($data->eventType == "Order") {
+          $data = $data->data;
+          echo("FormType = ".$data->formType."\n");
+          echo("Payment  = ".$data->payments[0]->state."\n");
+          if ($data->formType == "Membership" && $data->payments[0]->state == "Authorized") {
+            $prenom = ucfirst(supprimerCaracteresSpeciaux($data->items[0]->user->firstName));
+            $nom    = strtoupper(supprimerCaracteresSpeciaux($data->items[0]->user->lastName));
+            $event  = "Membership";
+            $filename = $prenom."_".$nom."_".$event.".json";
+            echo("Filename = ".$filename."\n");
+            if (!file_exists($filename)) {
+              file_put_contents($filename,
+                                json_encode($data,
+                                            JSON_UNESCAPED_UNICODE|
+                                            JSON_UNESCAPED_SLASHES));
+
+            }
+          }
         }
       }
       /*
