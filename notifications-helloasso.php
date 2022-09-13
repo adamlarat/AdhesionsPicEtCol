@@ -45,11 +45,11 @@
       }
 #      echo("Coucou!\n");
       $jsonFile = file_get_contents("php://input");
-      $data     = json_decode($jsonFile);
-      if ($data != false) {
-        echo("Eventype = ".$data->eventType."\n");
-        if ($data->eventType == "Order") {
-          $data = $data->data;
+      $json     = json_decode($jsonFile);
+      if ($json != false) {
+        echo("Eventype = ".$json->eventType."\n");
+        if ($json->eventType == "Order") {
+          $data = $json->data;
           echo("FormType = ".$data->formType."\n");
           echo("Payment  = ".$data->payments[0]->state."\n");
           if ($data->formType == "Membership" && $data->payments[0]->state == "Authorized") {
@@ -60,7 +60,7 @@
             echo("Filename = ".$filename."\n");
             if (!file_exists($filename)) {
               file_put_contents($filename,
-                                json_encode($data,
+                                json_encode($json,
                                             JSON_UNESCAPED_UNICODE|
                                             JSON_UNESCAPED_SLASHES));
 
