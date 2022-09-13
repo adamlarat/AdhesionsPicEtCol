@@ -14,3 +14,6 @@ Emails/*
 CoffreFort/*
 nextcloudRescan.sh
 TODO.txt
+*.json
+Dumps/*
+convert.php
