@@ -510,7 +510,7 @@ class Adherent:
             self.noter(' * WARNING:',"l'adhérent·e"+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
             self.noter('            Aller voir sur https://licence2.fsgt.org')
             self.erreur += 1
-        return
+        return self.erreur
 
     def trouveCertif(self,oldCertifDir):
         """ Cette fonction permet de chercher un certificat nommé

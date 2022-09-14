@@ -3,13 +3,33 @@
   <head>
     <meta charset="utf-8"/>
     <title>Callback de récupération des notifications HelloAsso</title>
-    <style>
-      #nothing {font-size: 20px;}
-      #something {font-size: 30px;}
-    </style>
   </head>
   <body>
     <?php
+      echo "Here is PHP\n";
+      $jsonFile = file_get_contents("php://input");
+      $jsonData = json_decode($jsonFile);
+      if ($jsonData != false) {
+        echo("Eventype = ".$jsonData->eventType."\n");
+        if ($jsonData->eventType == "Order") {
+          $output = array();
+          $pythonData = json_encode($jsonData,
+                                    JSON_UNESCAPED_UNICODE|
+                                    JSON_UNESCAPED_SLASHES);
+          exec("python3 notifications-helloasso.py ".escapeshellarg($pythonData),$output);
+          echo "<br/>\n<div id=reponse>\n";
+          foreach ($output as $line) {
+            echo $line."<br/>\n";
+          }
+          echo "</div>\n";
+        }
+      }
+      else {
+        echo "JSON Data is corrupted:\n";
+        print_r($jsonData);
+      }
+
+    /*
       function enleve_accents($chaine)
       {
         $accents = array('À','Á','Â','Ã','Ä','Å','Æ','Ç','È','É','Ê','Ë','Ì','Í','Î','Ï','Ð',
@@ -45,11 +65,11 @@
       }
 #      echo("Coucou!\n");
       $jsonFile = file_get_contents("php://input");
-      $json     = json_decode($jsonFile);
-      if ($json != false) {
-        echo("Eventype = ".$json->eventType."\n");
-        if ($json->eventType == "Order") {
-          $data = $json->data;
+      $jsonData = json_decode($jsonFile);
+      if ($jsonData != false) {
+        echo("Eventype = ".$jsonData->eventType."\n");
+        if ($jsonData->eventType == "Order") {
+          $data = $jsonData->data;
           echo("FormType = ".$data->formType."\n");
           echo("Payment  = ".$data->payments[0]->state."\n");
           if ($data->formType == "Membership" && $data->payments[0]->state == "Authorized") {
@@ -60,7 +80,7 @@
             echo("Filename = ".$filename."\n");
             if (!file_exists($filename)) {
               file_put_contents($filename,
-                                json_encode($json,
+                                json_encode($jsonData,
                                             JSON_UNESCAPED_UNICODE|
                                             JSON_UNESCAPED_SLASHES));
 
@@ -68,6 +88,7 @@
           }
         }
       }
+      */
       /*
         $date     = date("Ymd-His");
 #        file_put_contents('vardump_'.$date.'.json',$jsonFile);
