@@ -11,6 +11,6 @@ if [[ $# > 1 ]]
 then 
   adresse=$2
 else
-  adresse="http://localhost/RobotLicencesBabasse/notifications-helloasso-old.php" 
+  adresse="http://localhost/RobotLicencesBabasse/notifications-helloasso.php" 
 fi
 curl -v -H "Content-Type: application/json" -X POST -d "$data" $adresse

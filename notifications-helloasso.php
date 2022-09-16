@@ -6,30 +6,6 @@
   </head>
   <body>
     <?php
-      echo "Here is PHP\n";
-      $jsonFile = file_get_contents("php://input");
-      $jsonData = json_decode($jsonFile);
-      if ($jsonData != false) {
-        echo("Eventype = ".$jsonData->eventType."\n");
-        if ($jsonData->eventType == "Order") {
-          $output = array();
-          $pythonData = json_encode($jsonData,
-                                    JSON_UNESCAPED_UNICODE|
-                                    JSON_UNESCAPED_SLASHES);
-          exec("python3 notifications-helloasso.py ".escapeshellarg($pythonData),$output);
-          echo "<br/>\n<div id=reponse>\n";
-          foreach ($output as $line) {
-            echo $line."<br/>\n";
-          }
-          echo "</div>\n";
-        }
-      }
-      else {
-        echo "JSON Data is corrupted:\n";
-        print_r($jsonData);
-      }
-
-    /*
       function enleve_accents($chaine)
       {
         $accents = array('À','Á','Â','Ã','Ä','Å','Æ','Ç','È','É','Ê','Ë','Ì','Í','Î','Ï','Ð',
@@ -63,6 +39,94 @@
         $chaine = preg_replace('/[^a-zA-Z0-9]/s','',enleve_accents($chaine));
         return strtolower($chaine);
       }
+      
+      function saison(){
+        $annee = (int) date("Y");
+        $mois  = (int) date("m");
+        if ($mois < 9)
+        {
+          $saison = strval($annee-1)."-".$annee;
+        }
+        else
+        {
+          $saison = $annee."-".($annee+1);
+        }
+        echo("Mois = ".$mois.", Année = ".$annee.", Saison = ".$saison."\n");
+        return $saison;
+      }
+
+      // À supprimer
+      echo "Here is PHP\n";
+      $date      = date("Ymd-His");
+      $prenom    = "Inconnu";
+      $nom       = "INCONNU";
+      $event     = "Evenement";
+      $logsName  = $date."_".$prenom."_".$nom."_".$event;
+      $logsCree  = false;
+
+      $jsonFile = file_get_contents("php://input");
+      $jsonData = json_decode($jsonFile);
+      if ($jsonData != false) {
+        // À supprimer
+        echo("Eventype = ".$jsonData->eventType."\n");
+        $event = $jsonData->eventType;
+        if ($jsonData->eventType == "Order") {
+          $data = $jsonData->data;
+          // À supprimer
+          echo("FormType = ".$data->formType."\n");
+          echo("Payment  = ".$data->payments[0]->state."\n");
+          $event = $data->formType;
+          if ($data->formType == "Membership" && $data->payments[0]->state == "Authorized") {
+            /* Récupération des informations de la notifications */
+            $prenom = ucfirst(supprimerCaracteresSpeciaux($data->items[0]->user->firstName));
+            $nom    = strtoupper(supprimerCaracteresSpeciaux($data->items[0]->user->lastName));
+            $event  = "Membership";
+            $logsName = $date."_".$prenom."_".$nom."_".$event;
+            // À supprimer
+            echo("logsName= ".$logsName."\n");
+
+            /* Création du dossier de logs et backup */
+            $saison   = saison();
+            $dossierAdhesions = "../".$saison."/";
+            $fichierCourant = $dossierAdhesions."AdhesionsPicEtCol_".$saison.".ods";
+            $fichierCSV     = $dossierAdhesions."AdhesionsPicEtCol_".$saison.".csv";
+            $dossierLogs    = "Logs/".$logsName."/";
+            $fichierBackup  = $dossierLogs."AdhesionsPicEtCol_".$saison.".ods.bak";
+            $logsCree       = True;
+            mkdir($dossierLogs);
+            if(!copy($fichierCourant,$fichierBackup)){
+              echo("La sauvegarde des adhésions en cours a échoué !\n");
+            }
+            /* Sauvegarde de la notification HelloAsso au format JSON */
+            $pythonData = json_encode($jsonData,
+                                      JSON_UNESCAPED_UNICODE|
+                                      JSON_UNESCAPED_SLASHES);
+            if(!file_put_contents($dossierLogs.$logsName.".json",$pythonData)){
+              echo("La sauvegarde des données JSON a échoué !\n");
+            }
+
+            /* Exécution du script python */
+            $output = array();
+            exec("python3 notifications-helloasso.py ".escapeshellarg($pythonData),$output);
+            // À outputer dans les logs
+            echo "<br/>\n<div id=reponse>\n";
+            foreach ($output as $line) {
+              echo $line."<br/>\n";
+            }
+            echo "</div>\n";
+          }
+        }
+      }
+      if (!$logsCree){
+        // À outputer dans les logs
+        echo("JSON Data is corrupted:\n");
+        //print_r($jsonData);
+        if(!file_put_contents("Logs/".$logsName.".json",$jsonFile)){
+          echo("L'enregistrement des données reçues a également échoué !");
+        }
+      }
+
+    /*
 #      echo("Coucou!\n");
       $jsonFile = file_get_contents("php://input");
       $jsonData = json_decode($jsonFile);
