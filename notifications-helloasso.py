@@ -71,28 +71,28 @@ else:
 saison=mf.saison()
 
 dossierLogs = "Logs/"
-dossierAdhesions = "../"
+dossierAdhesions = "../"+saison+'/'
 chemins = {
     'dossierLogs'         : dossierLogs,
     'saison'              : saison,
-    'Telechargements'     : dossierLogs+"Telechargements/",
     'fichierParametres'   : "CoffreFort/parametresRobot.txt",
     'listeEmails'         : "CoffreFort/liste_emails.txt",
     'parametresRobot'     : mf.myLogin("CoffreFort/parametresRobot.txt"),
     'loginContact'        : mf.myLogin("CoffreFort/login_contact.txt"),
     'loginAPI'            : mf.myLogin("CoffreFort/login_api_helloasso.txt"),
-    'adhesionsEnCoursODS' : dossierAdhesions+saison+"/AdhesionsPicEtCol_"+saison+".ods",
-    'adhesionsEnCoursCSV' : dossierAdhesions+saison+"/AdhesionsPicEtCol_"+saison+".csv",
-    'dossierCM'           : dossierAdhesions+saison+'/CertificatsMedicaux/'
+    'adhesionsEnCoursODS' : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".ods",
+    'adhesionsEnCoursCSV' : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".csv",
+    'dossierCM'           : dossierAdhesions+'CertificatsMedicaux/',
+    'Telechargements'     : dossierAdhesions+"Telechargements/"
 }
 
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
-# print("**************************************")
-# print("Traitement de la nouvelle adhésion ...")
-# print("**************************************")
+print("**************************************")
+print("Traitement de la nouvelle adhésion ...")
+print("**************************************")
 """ Création de l'adhérent·e à partir du fichier JSON"""
-nouvo = Adherent(json=jsonData['data']['items'][0],afficherErreur=False)
+nouvo = Adherent(json=jsonData['data']['items'][0])#,afficherErreur=False)
 nouvo.noter("Adhérent·e : "+nouvo.prenom+" "+nouvo.nom+"  "+nouvo.statut)
 #### Au cas où...
 if len(jsonData['data']['items']) != 1:
@@ -114,9 +114,9 @@ if not nouvo.adhesionEnCours:
     ### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
     nouvo.formaterPourExport()
 
-# print("**************************************")
-# print("Vérification des adhésions en cours...")
-# print("**************************************")
+print("**************************************")
+print("Vérification des adhésions en cours...")
+print("**************************************")
 """ Vérification des adhésions en cours """
 ### Nb d'adhésions en cours
 enCours_np = toutesLesAdhesions[0]['tableau']
@@ -125,19 +125,19 @@ dejaAdherents = []
 erreurEnCours = []
 nb_enCours = 0
 for i in range(1,Nb_enCours+1):
-    adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
+    adherent = Adherent(adhesions=enCours_np,ligne=i)#,afficherErreur=False)
     adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     if adherent.verifierAdhesionEnCours(chemins['dossierCM'])>0:
         erreurEnCours += (adherent,)
     dejaAdherents += (adherent,)
     nb_enCours += 1
     
-compteurs = {
-    'helloAsso' : nb_helloAsso,
-    'nouveaux'  : nb_nvo,
-    'deja'      : nb_deja,
-    'enCours'   : nb_enCours}
+# compteurs = {
+#     'helloAsso' : nb_helloAsso,
+#     'nouveaux'  : nb_nvo,
+#     'deja'      : nb_deja,
+#     'enCours'   : nb_enCours}
 
-""" Finalisation du travail et écriture dans les fichiers adhoc """
-io.export(nvllesAdhesions,dejaAdherents,chemins,compteurs)
+# """ Finalisation du travail et écriture dans les fichiers adhoc """
+# io.export(nvllesAdhesions,dejaAdherents,chemins,compteurs)
 

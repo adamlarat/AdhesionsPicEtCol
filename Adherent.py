@@ -425,6 +425,8 @@ class Adherent:
 
     def telechargerDocuments(self,chemins):
         telechargements = chemins['Telechargements']
+        if not (os.path.exists(telechargements)):
+            os.mkdir(telechargements)
         if self.statut == 'EXT': ### Télécharger la licence
             self.certifOK   = 'EXT'
             self.dateCertif = 'EXT'
@@ -434,7 +436,7 @@ class Adherent:
             else:
                 fileName = wget.download(self.lienLicence,bar=None)
                 root,ext = os.path.splitext(fileName)
-                newFile  = telechargements+'Licence2021_'+self.clubLicence+'_'+self.prenom+'_'+self.nom+ext
+                newFile  = telechargements+'Licence'+chemins['saison']+'_'+self.clubLicence+'_'+self.prenom+'_'+self.nom+ext
                 os.rename(fileName,newFile)
                 return
         else: ### Télécharger le certificat médical ou prendre celui de l'an dernier
