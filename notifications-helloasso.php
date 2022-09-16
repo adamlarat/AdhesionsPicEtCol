@@ -104,7 +104,10 @@
             if(!file_put_contents($dossierLogs.$logsName.".json",$pythonData)){
               echo("La sauvegarde des données JSON a échoué !\n");
             }
-
+            
+            /* Export des adhésions en cours au format CSV */
+            $www_data_home = "/var/www/html/home";
+            exec("export HOME=$www_data_home && libreoffice --convert-to csv:\"Text - txt - csv (StarCalc)\":59,34,76,,,,true,,false --outdir ".$dossierAdhesions." ".$fichierCourant);
             /* Exécution du script python */
             $output = array();
             exec("python3 notifications-helloasso.py ".escapeshellarg($pythonData),$output);
@@ -114,6 +117,12 @@
               echo $line."<br/>\n";
             }
             echo "</div>\n";
+            /* Ré-export des adhésions en cours au format CSV */
+            exec("export HOME=$www_data_home && libreoffice --convert-to csv:\"Text - txt - csv (StarCalc)\":59,34,76,,,,true,,false --outdir ".$dossierAdhesions." ".$fichierCourant);
+            /* Re-scan des fichiers par Nextcloud quand on est sur le serveur */
+            if (gethostname() == "mobylette") {
+              exec("php /var/www/html/moncloud/occ files:scan -p \"/PCAdmin/files/Administration/Adhésions\"");
+            }
           }
         }
       }
