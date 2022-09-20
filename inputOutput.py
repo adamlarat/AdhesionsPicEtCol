@@ -146,9 +146,9 @@ def chargerToutesLesAdhesions(chemins):
         if len(np.shape(adhesions_np)) == 1:
             adhesions_np = adhesions_np[np.newaxis,:]
         adhesions_np = formaterTable(adhesions_np)
-        noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.upper())
+        noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
                                     for nom in mf.getCol(adhesions_np,'NOM')])
-        prenoms      = np.array([mf.supprimerCaracteresSpeciaux(prenom.title())
+        prenoms      = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
                                     for prenom in mf.getCol(adhesions_np,'PRENOM')])
         ddn          = np.array([dob.replace('"','').strip()
                                     for dob in mf.getCol(adhesions_np,'NAISS')])

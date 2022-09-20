@@ -130,6 +130,8 @@ class Adherent:
                 dictionnaire titreFSGT """
             for attribut in titreFSGT:
                 valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
+                if type(valeur) == str:
+                    valeur = valeur.strip()
                 if 'date' in attribut:
                     setattr(self,attribut,mf.verifierDate(valeur))
                 else:
@@ -146,6 +148,8 @@ class Adherent:
                 dictionnaire jsonToObject """
             for attribut in jsonToObject:
                 valeur = mf.fromJson(json,jsonToObject[attribut])
+                if type(valeur) == str:
+                    valeur = valeur.strip()
                 if 'date' in attribut:
                     setattr(self,attribut,mf.verifierDate(valeur))
                 else:
@@ -162,9 +166,9 @@ class Adherent:
             self.clubLicence   = ""
             self.lienCertif    = ""
             """ Puis indiquer nom, prénom et date de naissance"""
-            self.nom           = nom
-            self.prenom        = prenom
-            self.dateNaissance = mf.verifierDate(dateNaissance)
+            self.nom           = nom.strip()
+            self.prenom        = prenom.strip()
+            self.dateNaissance = mf.verifierDate(dateNaissance.strip())
             """ Si True, alors les notifications seront affichées à l'écran.
             Si False, elles seront uniquement stockés dans la chaine de caractères
             self.messageErreur """
@@ -312,7 +316,7 @@ class Adherent:
             self.erreur += 1
         return self
     
-    def completerInfoPlusRecentes(self,toutesLesAdhesions):
+    def completerInfoPlusRecentes(self,toutesLesAdhesions,ecraser=False):
         indice = self.derniereSaison['indice']
         ligne  = self.historique[indice]
         """ On cherche d'abord le certif pour pouvoir remplacer le nom de rercherche ensuite """
@@ -324,10 +328,12 @@ class Adherent:
             self.noter(" DOSSIER de Recherche : ",dossierCM)
         """ Remplacement de tous les attributs par ceux stockés dans le *.ods """
         for attribut in titreFSGT:
-            if getattr(self,attribut) == '':
-                setattr(self,attribut,mf.getEntry(toutesLesAdhesions[indice]['tableau'],
-                                                  ligne,
-                                                  titreFSGT[attribut]))    
+            if (getattr(self,attribut) == '') or ecraser:
+                valeur = mf.getEntry(toutesLesAdhesions[indice]['tableau'],
+                                     ligne,
+                                     titreFSGT[attribut])
+                if (valeur != ''):
+                    setattr(self,attribut,valeur)    
         return self
         
 

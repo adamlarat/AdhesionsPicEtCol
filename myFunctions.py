@@ -6,7 +6,6 @@ Created on Sat Nov 20 13:09:03 2021
 @author: larat
 """
 
-import numpy as np
 import re
 from unidecode import unidecode
 from datetime import date,datetime
