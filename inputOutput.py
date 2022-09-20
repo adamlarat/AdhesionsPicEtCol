@@ -12,6 +12,7 @@ import myFunctions as mf
 import pylocalc as pyods
 import sendMail as sm
 import helloasso_api as hapi
+import glob as glob
 
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
@@ -242,6 +243,63 @@ def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
     param.write('derniere_releve='+mf.today()+'\ndernier_lot=%i'%nLots)
     param.close()
 
+def fichierImportBaseLicence(chemins):
+    fichiers = glob.glob(chemins['dossierATraiter']+'fichier_import_base_licence_*.csv') 
+    lot = 0
+    if len(fichiers) == 1: 
+        return fichiers[0].split('/')[-1]
+    elif len(fichiers) == 0:
+        fichiers = glob.glob(chemins['dossierAdhesions']+'fichier_import_base_licence_*.csv')
+        for fichier in fichiers:
+            lot = max(lot,int(fichier.split('_')[-1][3:5]))
+        lot += 1
+        filename = 'fichier_import_base_licence_'+chemins['saison']+'_Lot%02i.csv'%lot
+        fp       = open(chemins['dossierATraiter']+filename,"w")
+        fp.close()
+    else : ### On a trouvé plusieurs fichiers d'import dans dossierATraiter
+        print(" * INFO : Plusieurs fichiers 'fichier_import_base_licence_*.csv' ont été trouvé dans le dossier "+chemins['dossierATraiter'])
+        print("          Je prends celui qui a le plus grand numéro de lot !")
+        for fichier in fichiers:
+            lot = max(lot,int(fichier.split('_')[-1][3:5]))
+        filename = 'fichier_import_base_licence_'+chemins['saison']+'_Lot%02i.csv'%lot
+    return filename
+                
+        
+def export_notification(nvlleAdhesion,dejaAdherents,chemins):
+    """ Cette fonction finalise le travail sur une notification HelloAsso :
+        - Écriture dans les fichiers
+            * {mutations|fichier_import_FSGT|erreurs}.csv
+            * AdhesionsPicEtCol_saisonEnCours.ods
+        - Inscrire sur les listes de diffusion, si nécessaire
+        - Envoyer un mail de bienvenue/réinformatif
+        - Résumer le travail effectué à l'écran et par mail
+    """
+    # Écriture dans le fichier ODS des adhésions en cours
+    miseAJourAdhesionsEnCours((nvlleAdhesion,),chemins['adhesionsEnCoursODS'])
+    # Écriture dans les fichiers FSGT
+    aTraiter      = chemins['dossierATraiter']
+    fichierImport = fichierImportBaseLicence(chemins)
+    fichier       = False
+    if nvlleAdhesion.erreur >0:
+        fichier = open(aTraiter+'erreurs.csv','a')
+    elif nvlleAdhesion.statut == 'MUT':
+        fichier = open(aTraiter+'mutations.csv','a')
+    elif not(nvlleAdhesion.statut == 'EXT'):
+        fichier = open(aTraiter+fichierImport,'a')
+    
+    if fichier:
+        print(nvlleAdhesion.toString("FSGT"), file=fichier)
+        fichier.close()
+        
+    # if not nvlleAdhesion.ancienAdherent:
+    #     listesDiffusions(nvlleAdhesion)
+    #     mailBienvenue(nvlleAdhesion)
+    # else:
+    #     mailReinformatif(nvlleAdhesion)
+    
+    # # Écrire les logs, affichage écran et e-mails
+    # notificationRobot(nvllesAdhesions,dejaAdherents,chemins)
+
 def compteDocuments(telechargements):
     """ Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences
         importés dans le dossier local 'Telechargements/'
@@ -262,6 +320,11 @@ def emptyDir(dirname):
     if os.path.exists(dirname):
         shutil.rmtree(dirname)
     os.mkdir(dirname)
+    
+def verifierDossier(dirname):
+    """ Si le dossier n'existe pas, le créer ! """
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
 
 
 def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):

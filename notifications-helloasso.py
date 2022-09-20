@@ -72,6 +72,7 @@ saison=mf.saison()
 
 dossierLogs = "Logs/"
 dossierAdhesions = "../"+saison+'/'
+dossierATraiter = dossierAdhesions+'ATraiter/'
 chemins = {
     'dossierLogs'         : dossierLogs,
     'saison'              : saison,
@@ -80,11 +81,17 @@ chemins = {
     'parametresRobot'     : mf.myLogin("CoffreFort/parametresRobot.txt"),
     'loginContact'        : mf.myLogin("CoffreFort/login_contact.txt"),
     'loginAPI'            : mf.myLogin("CoffreFort/login_api_helloasso.txt"),
+    'dossierAdhesions'    : dossierAdhesions,
     'adhesionsEnCoursODS' : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".ods",
     'adhesionsEnCoursCSV' : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".csv",
     'dossierCM'           : dossierAdhesions+'CertificatsMedicaux/',
-    'Telechargements'     : dossierAdhesions+"Telechargements/"
+    'dossierATraiter'     : dossierATraiter,
+    'Telechargements'     : dossierAdhesions+'CertificatsMedicaux/'#dossierATraiter+"Telechargements/"
 }
+io.verifierDossier(chemins['dossierCM'])
+io.verifierDossier(chemins['dossierATraiter'])
+io.verifierDossier(chemins['Telechargements'])
+
 
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
@@ -127,6 +134,7 @@ nb_enCours = 0
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(adhesions=enCours_np,ligne=i)#,afficherErreur=False)
     adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
+    ### Utile ?
     if adherent.verifierAdhesionEnCours(chemins['dossierCM'])>0:
         erreurEnCours += (adherent,)
     dejaAdherents += (adherent,)
@@ -138,6 +146,6 @@ for i in range(1,Nb_enCours+1):
 #     'deja'      : nb_deja,
 #     'enCours'   : nb_enCours}
 
-# """ Finalisation du travail et écriture dans les fichiers adhoc """
-# io.export(nvllesAdhesions,dejaAdherents,chemins,compteurs)
+""" Finalisation du travail et écriture dans les fichiers adhoc """
+io.export_notification(nouvo,dejaAdherents,chemins)
 

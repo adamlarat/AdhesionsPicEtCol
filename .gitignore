@@ -17,4 +17,4 @@ nextcloudRescan.sh
 TODO.txt
 *.json
 Dumps/*
-convert.php
+convert*.php

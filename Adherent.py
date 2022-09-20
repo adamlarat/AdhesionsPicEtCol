@@ -14,6 +14,7 @@ Created on Thu Nov 18 17:12:56 2021
         self.*
 """
 import myFunctions as mf
+import inputOutput as io
 import numpy as np
 import wget, os, shutil
 import re
@@ -425,8 +426,7 @@ class Adherent:
 
     def telechargerDocuments(self,chemins):
         telechargements = chemins['Telechargements']
-        if not (os.path.exists(telechargements)):
-            os.mkdir(telechargements)
+        io.verifierDossier(telechargements)
         if self.statut == 'EXT': ### Télécharger la licence
             self.certifOK   = 'EXT'
             self.dateCertif = 'EXT'
