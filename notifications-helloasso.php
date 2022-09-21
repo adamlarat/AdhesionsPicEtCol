@@ -91,10 +91,10 @@
 
             /* Ouverture du fichier de Logs */ 
             $logs = fopen($fichierLogs,"w");
-            fwrite($logs,"EventType = ".$jsonData->eventType."\n");
-            fwrite($logs,"FormType  = ".$data->formType."\n");
-            fwrite($logs,"Payment   = ".$data->payments[0]->state."\n");
-            fwrite($logs,"LogsName  = ".$logsName."\n");
+            //fwrite($logs,"EventType = ".$jsonData->eventType."\n");
+            //fwrite($logs,"FormType  = ".$data->formType."\n");
+            //fwrite($logs,"Payment   = ".$data->payments[0]->state."\n");
+            //fwrite($logs,"LogsName  = ".$logsName."\n");
             
             /* Sauvegarde des adhésions en cours */
             if(!copy($fichierCourant,$fichierBackup)){
@@ -118,12 +118,12 @@
             $output = array();
             //exec("python3 notifications-helloasso.py ".escapeshellarg($pythonData)." 2>&1",$output);
             exec("export HOME=$www_data_home && python3 notifications-helloasso.py ".escapeshellarg($pythonData)." 2>&1",$output);
-            // À outputer dans les logs
-            fwrite($logs,"<br/>\n<div id=python>\n");
+            /* Output de python dans les logs */
+            //fwrite($logs,"<br/>\n<div id=python>\n");
             foreach ($output as $line) {
-              fwrite($logs,$line."<br/>\n");
+              fwrite($logs,$line."\n"); //."<br/>\n");
             }
-            fwrite($logs,"</div>\n");
+            //fwrite($logs,"</div>\n");
             
             /* Ré-export des adhésions en cours au format CSV */
             exec($commandCSV);

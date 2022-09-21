@@ -379,7 +379,7 @@ class Adherent:
         self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
                       ", ligne ",self.historique[indice])
         self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
-                                         ligne=self.historique[indice])
+                                         ligne=self.historique[indice],afficherErreur=False)
         ### Mettre à jour les données si c'est un ancien adhérent non en cours
         if not self.adhesionEnCours:
             self.miseAJourStatut()
@@ -550,8 +550,8 @@ class Adherent:
             self.erreur += 1
         """ Vérifier le numéro de licence """
         if self.numLicence == '':
-            self.noter(' * WARNING:',"l'adhérent·e"+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
-            self.noter('            Aller voir sur https://licence2.fsgt.org')
+            self.noter(' * WARNING:',"l'adhérent·e "+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
+            self.noter('            À récupérer sur https://licence2.fsgt.org')
             self.erreur += 1
         return self.erreur
 

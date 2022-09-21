@@ -82,10 +82,11 @@ Nb_enCours = np.shape(enCours_np)[0]-1
 erreurEnCours = []
 nb_enCours = 0
 for i in range(1,Nb_enCours+1):
-    adherent = Adherent(adhesions=enCours_np,ligne=i)
+    adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
     ### Utile ?
     if adherent.verifierAdhesionEnCours(chemins['dossierCM'])>0:
         erreurEnCours += (adherent,)
+        print(adherent.messageErreur)
     nb_enCours += 1
 if erreurEnCours == []:
     print("  Toutes les adhésions en cours sont nickels !")
