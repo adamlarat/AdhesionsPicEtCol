@@ -183,6 +183,8 @@ class Adherent:
         self.premiereSaison  = {'indice':-1,'nom':''}
         self.derniereSaison  = {'indice':-1,'nom':''}
         self.documents       = []
+        """ Élements communs d'affichage des données """
+        self.noter("Adhérent·e : "+self.prenom+" "+self.nom+"  "+self.statut)
         
     def noter(self,*args):
         for arg in args:
@@ -313,7 +315,7 @@ class Adherent:
             déclaré
         """
         if (self.statut in ['EXT','4MS']) and self.typeAdhesion[:3] == 'LIC':
-            self.noter(" * INFO_"+self.statut+":","l'adhérent·e se déclare Extérieur/4MOIS mais a payé la licence")
+            self.noter(" * INFO_"+self.statut+":","l'adhérent·e se déclare "+self.statut+" mais a payé la licence")
             self.noter(" *           Je passe le statut temporairement en 'NVO'")
             self.statut = 'NVO'
         if self.statut != 'EXT' and self.typeAdhesion[:3] == 'EXT':
@@ -443,13 +445,16 @@ class Adherent:
         if self.numLicence == '' and self.derniereAdhesion.numLicence != '' :
             self.numLicence = self.derniereAdhesion.numLicence
         elif re.sub(r'[^0-9]','',self.numLicence) != re.sub(r'[^0-9]','',self.derniereAdhesion.numLicence):
-            self.noter(" * ERROR_"+self.statut+": licence numbers are different!")
+            self.noter(" * INFO_"+self.statut+": les numéros de licence sont différents !")
             self.noter(" * - Numéro de Licence l'an dernier :",self.derniereAdhesion.numLicence)
             self.noter(" * - Numéro de Licence cette année  :",self.numLicence)
-            self.numLicence = 'NUMLIC_INCONNU'
-            self.erreur += 1
+            if self.derniereAdhesion.numLicence != '':
+                self.noter(" * - Je prends le plus ancien !")
+                self.numLicence = self.derniereAdhesion.numLicence
+            else:
+                self.noter(" * - Je prends celui qui n'est pas vide !")                
         elif self.numLicence == '' and (self.statut == 'EXT' or self.statut == 'MUT'):
-            self.noter(' * INFO_'+self.statut+': Missing Licence Number!')
+            self.noter(' * INFO_'+self.statut+': Numéro de licence manquant !')
         return
 
     def miseAJourDateCertif(self):
