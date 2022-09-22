@@ -12,6 +12,9 @@ import myFunctions as mf
 import pylocalc as pyods
 import sendMail as sm
 import helloasso_api as hapi
+import glob as glob
+from markdown import markdown
+from bs4 import BeautifulSoup as html
 
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
@@ -145,9 +148,9 @@ def chargerToutesLesAdhesions(chemins):
         if len(np.shape(adhesions_np)) == 1:
             adhesions_np = adhesions_np[np.newaxis,:]
         adhesions_np = formaterTable(adhesions_np)
-        noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.upper())
+        noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
                                     for nom in mf.getCol(adhesions_np,'NOM')])
-        prenoms      = np.array([mf.supprimerCaracteresSpeciaux(prenom.title())
+        prenoms      = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
                                     for prenom in mf.getCol(adhesions_np,'PRENOM')])
         ddn          = np.array([dob.replace('"','').strip()
                                     for dob in mf.getCol(adhesions_np,'NAISS')])
@@ -166,39 +169,315 @@ def chargerToutesLesAdhesions(chemins):
         saison      = nvlleSaison
     return toutesLesAdhesions
 
-
-def ecrireFichiersFSGT(adherents,exportDict):
-    ### Remplissage des fichiers
-    for adherent in adherents:
-        # Exporter au Format FSGT pour import dans le serveur de licences
-        if adherent.erreur > 0:
-            print(adherent.toString("FSGT"), file=exportDict["ERR"][-1])
-            exportDict["ERR"][0] += 1
-        elif adherent.statut == "EXT":
-            exportDict["EXT"][0] += 1
-        else:
-            print(adherent.toString("FSGT"), file=exportDict[adherent.statut][-1])
-            exportDict[adherent.statut][0] += 1
-    return exportDict
-
-
-def miseAJourAdhesionsEnCours(adherents,adhesionsEnCours):
+def miseAJourAdhesionsEnCours(adherents,chemins):
     """ Cette fonction ouvre un document *.ods à l'aide de la librairie Pylocalc.
         Elle y insère toutes les données relatives aux adhérent·e·s
     """
+    erreur = ''
     ### Ouverture du document
+    adhesionsEnCours = chemins['adhesionsEnCoursODS']
     doc = pyods.Document(adhesionsEnCours)
-    doc.connect()
+    try:
+        doc.connect()
+    except:
+        erreur+=" * ERREUR : pas de connection possible à "+adhesionsEnCours+'\n'
     sheet = doc['Adhesions_Adultes']
     ### mise-à-jour des adhésions
     for adherent in adherents:
         sheet.append_row(adherent.toODS())
-    doc.save()
-    doc.close()
+    try:
+        doc.save()
+    except:
+        erreur+=" * ERREUR : impossible d'enregistrer le document "+adhesionsEnCours+'\n'
+    try:    
+        doc.close()
+    except:
+        erreur+=" * ERREUR : le document "+adhesionsEnCours+" ne s'est pas fermé correctement\n"
+        
     os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
+    chemins['erreurExport'] += erreur
+
+def fichierImportBaseLicence(chemins):
+    """ Retourne le nom du fichier d'import pour le serveur de licence FSGT.
+        Si ce dernier n'existe pas dans chemins['dossierATraiter'], cette fonction
+        le crée en : 
+            - rajoutant 1 au dernier numéro de lot présent dans chemins['dossierAdhesions'];
+            - initialisant le numéro de lot à 01 si aucun fichier d'import n'est présent dans ce dossier.
+    """
+    erreur = ''
+    fichiers = glob.glob(chemins['dossierATraiter']+'fichier_import_base_licence_*.csv') 
+    lot = 0
+    if len(fichiers) == 1: 
+        filename = fichiers[0].split('/')[-1]
+    elif len(fichiers) == 0:
+        fichiers = glob.glob(chemins['dossierAdhesions']+'fichier_import_base_licence_*.csv')
+        for fichier in fichiers:
+            lot = max(lot,int(fichier.split('_')[-1][3:5]))
+        lot += 1
+        filename = 'fichier_import_base_licence_'+chemins['saison']+'_Lot%02i.csv'%lot
+        try:
+            fp       = open(chemins['dossierATraiter']+filename,"w")
+            fp.close()
+        except:
+            erreur += " * Erreur : échec à la création de "+chemins['dossierATraiter']+filename+"\n"
+    else : ### On a trouvé plusieurs fichiers d'import dans dossierATraiter
+        print(" * INFO : Plusieurs fichiers 'fichier_import_base_licence_*.csv' ont été trouvé dans le dossier "+chemins['dossierATraiter'])
+        print("          Je prends celui qui a le plus grand numéro de lot !")
+        for fichier in fichiers:
+            lot = max(lot,int(fichier.split('_')[-1][3:5]))
+        filename = 'fichier_import_base_licence_'+chemins['saison']+'_Lot%02i.csv'%lot
+    chemins['erreurs.csv']   = chemins['dossierATraiter']+'erreurs.csv'
+    chemins['mutations.csv'] = chemins['dossierATraiter']+'mutations.csv'
+    chemins['fichierImport'] = chemins['dossierATraiter']+filename
+    chemins['erreurExport'] += erreur
+    return chemins
+                
+def ecrireFichiersFSGT(nvllesAdhesions,chemins):
+    """ Exporte les données des nouvelleaux adhérent·e·s dans
+        - 'erreurs.csv' si il y a eu une erreur pendant le traitement
+        - 'mutations.csv' si il s'agit d'une mutation
+        - 'fichier_import_base_licence_$saison_Lotxx.csv' sinon
+    """
+    erreur = ''
+    chemins = fichierImportBaseLicence(chemins)
+    for nvlleAdhesion in nvllesAdhesions:
+        fichier       = False
+        if nvlleAdhesion.erreur >0:
+            try:
+                fichier = open(chemins['erreurs.csv']  ,'a')
+            except:
+                erreur += " * Erreur : échec à l'ouverture de "+chemins['erreurs.csv']+"\n"
+        elif nvlleAdhesion.statut == 'MUT':
+            try:
+                fichier = open(chemins['mutations.csv'],'a')
+            except:
+                erreur += " * Erreur : échec à l'ouverture de "+chemins['mutations.csv']+"\n"
+        elif not(nvlleAdhesion.statut == 'EXT'):
+            try:
+                fichier = open(chemins['fichierImport'],'a')
+            except:
+                erreur += " * Erreur : échec à l'ouverture de "+chemins['fichierImport']+"\n"
+        if fichier:
+            print(nvlleAdhesion.toString("FSGT"), file=fichier)
+            fichier.close()
+    chemins['erreurExport'] += erreur
+    return chemins
+    
+def export(nvlleAdhesion,adhesionsEnCours,chemins):
+    """ Cette fonction finalise le travail sur une notification HelloAsso :
+        - Écriture dans les fichiers
+            * {mutations|fichier_import_FSGT|erreurs}.csv
+            * AdhesionsPicEtCol_saisonEnCours.ods
+        - Inscrire sur les listes de diffusion, si nécessaire
+        - Envoyer un mail de bienvenue/réinformatif
+        - Récapituler le travail effectué par mail
+    """
+    # chaîne de caractères pour récupérer les erreurs lors de l'export
+    chemins['erreurExport'] = ''
+    
+    # Écriture dans le fichier ODS des adhésions en cours
+    miseAJourAdhesionsEnCours((nvlleAdhesion,),chemins)
+    # Écriture dans les fichiers FSGT
+    chemins = ecrireFichiersFSGT((nvlleAdhesion,),chemins)
+        
+    # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
+    #if not nvlleAdhesion.ancienAdherent:
+        #listesDiffusions(nvlleAdhesion,chemins)
+
+    # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
+    # mail récapitulatif des infos de Pic&Col pour les autres 
+    #mailAdherent(nvlleAdhesion,chemins)
+    
+    # Envoyer les logs par mail
+    #mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
+
+def listesDiffusions(nvlleAdhesion,chemins):
+    sm.envoyerEmail(login=chemins['loginContact'],
+                    sujet="Commande",
+                    pour='sympa@listes.picetcol38.fr',
+                    corps='ADD membres '+\
+                        nvlleAdhesion.email+' '+\
+                        nvlleAdhesion.prenom+' '+\
+                        nvlleAdhesion.nom)
+    return
+
+def nLignes(fichier):
+    if os.path.exists(fichier):
+        return len(open(fichier,'r').readlines())
+    else: 
+        return 0
+
+def mailAdherent(nvlleAdhesion,chemins):
+    """ Cette fonction crée un mail informatif adapté à la nouvelle adhésion 
+        et l'envoie à l'adhérent·e """
+    ### La structure HTML du message est stockée dans chemins['mailAdherent']
+    message = ''
+    erreur  = ''
+    try:
+        with open(chemins['mailAdherent'],'r') as mail:
+            for line in mail:
+                message += line+'\n'
+    except:
+        erreur += " * ERREUR : le fichier "+chemins['mailAdherent']+" ne s'est pas ouvert correctement\n"
+        erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
+        return
+    message=message.replace('PRENOM',nvlleAdhesion.prenom.replace('"',''))
+    
+    ### Le contenu de la lettre d'information est stockée dans chemins['fonctionnementPicEtCol']
+    ### sous format Markdown
+    fonctionnement=''
+    try:
+        with open(chemins['fonctionnementPicEtCol'],'r') as mail:
+            for line in mail:
+                fonctionnement += line+'\n'
+    except:
+        erreur += " * ERREUR : le fichier "+chemins['fonctionnementPicEtCol']+" ne s'est pas ouvert correctement\n"
+        erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
+        return
+            
+    ### Inclusion du contenu dans le HTML
+    message = message.replace('FONCTIONNEMENT',markdown(fonctionnement))
+    
+    ### Gestion du style. Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
+    nouvo      = ''
+    readhesion = ''
+    disparaitre= 'display:none;'
+    if nvlleAdhesion.ancienAdherent:
+        nouvo = disparaitre
+    else:
+        readhesion = disparaitre
+    style = ''\
+    +"<style>"\
+    +  "h3 {text-decoration:underline;margin: 30px 0px 0px 0px;}"\
+    +  "h4 {margin: 20px 0px -12px 0px;}"\
+    +  ".nouvo {"+nouvo+"}"\
+    +  ".readhesion {"+readhesion+"}"\
+    +  ".plain-text {"+disparaitre+"}"\
+    +  ".fonctionnement {margin: 0 0 0 30px;}"\
+    +"</style>"
+    
+    enTeteTexte = html(message,'html.parser').find('div',{"class":"plain-text"}).string
+    sm.envoyerEmail(chemins['loginContact'],
+                    sujet="Bienvenu·e à Pic&Col",
+                    pour=nvlleAdhesion.email,
+                    corps=enTeteTexte+fonctionnement, #en-tête texte plein et Markdown
+                    html =style+message) # full HTML
+    chemins['erreurExport'] += erreur
+    
 
 
-def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
+def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
+    # Constitution du message de log et pour le mail 
+    message = ""
+    message+= "*******************\n"
+    if len(nvllesAdhesions) == 1:
+        message+= "Nouvelle adhésion\n"
+    else:
+        message+= "Nouvelles adhésions\n"        
+    message+= "*******************\n"
+    for adherent in nvllesAdhesions:
+        message += adherent.messageErreur
+        
+    message+= "***********************************\n"
+    message+= "Vérification des adhésions en cours\n"
+    message+= "***********************************\n"
+    err = 0
+    for adherent in adhesionsEnCours:
+        if adherent.erreur > 0 :
+            message += adherent.messageErreur
+            err     += 1
+    if err == 0: 
+        message += "  Toutes les adhésions en cours sont nickels !\n"
+        
+    message += "---------- RÉSUMÉ DES ADHÉSIONS ------------------\n"
+    message += "Nombre d'adhésion en cours vérifiées  : %03i\n"%len(adhesionsEnCours)
+    message += "Nombre d'erreurs à traiter parmi les adhésions en cours : %03i\n"%err
+    message += "--------------------------------------------------\n"
+    nErreurs   = nLignes(chemins['erreurs.csv'])
+    nMutations = nLignes(chemins['mutations.csv'])
+    nImport    = nLignes(chemins['fichierImport'])
+    message += "Nombre de licences à traiter : %03i\n"%(nErreurs+nMutations+nImport)
+    message += " * Dont erreur.csv           : %03i\n"%nErreurs
+    message += " * Dont mutations.csv        : %03i\n"%nMutations
+    message += "--------------------------------------------------\n"
+    message += "Nombre total d'adhérent·e·s à Pic&Col : %03i\n"%(len(nvllesAdhesions)+len(adhesionsEnCours))
+    ### Rajouter ici une procédure pour obtenir le nombre d'adhésions sur le HelloAsso
+    message += "--------------------------------------------------\n"
+        
+        
+    nCertifs,nLicences = compteDocuments(chemins['dossierCM'])
+    message += "----------- DOCUMENTS TROUVÉS --------------------\n"
+    message += "Dossier  = "+chemins['dossierCM']+"\n"
+    message += "Certifs  = %03i\n"%nCertifs
+    message += "Licences = %03i\n"%nLicences
+    message += "--------------------------------------------------\n"
+    message += "\n"
+    
+    baseDeDonneesODS = chemins['adhesionsEnCoursODS']
+    importFSGT       = chemins['fichierImport']
+    mutations        = chemins['mutations.csv']
+    erreurs          = chemins['erreurs.csv']
+    message+= "************************\n"
+    message+= "Que reste-t-il à faire ?\n"
+    message+= "************************\n"
+    message+= " 1) Gérer les erreurs d'inscription. Ça peut être :\n"
+    message+= "    * des documents manquants (Certif, licence, ...)\n"
+    message+= "    * une typo dans l'inscription\n"
+    message+= "    * autre (partie à compléter !)\n"
+    message+= "   Bien penser à mettre à jour :\n"
+    message+= "    * les adhésions courantes : "+baseDeDonneesODS+"\n"
+    message+= "    * les fichiers d'export   : "+importFSGT+" ou "+mutations+"\n"
+    message+= " 2) Vérifier les certificats médicaux et les licences téléchargées dans\n"
+    message+= "    "+chemins['dossierCM']+"\n"
+    message+= " 3) S'il y a des mutations, envoyer le fichier "+mutations
+    message+= " à fsgt38@wanadoo.fr pour effectuer les mutations\n"
+    message+= " 5) Lorsque les erreurs et les mutations sont traitées, "
+    message+=     "rajouter le contenu des fichiers\n"
+    message+= "     "+mutations+"\n"
+    message+= "     et\n"
+    message+= "     "+erreurs+"\n"
+    message+= "     dans\n"
+    message+= "     "+importFSGT+"\n"
+    message+= " 6) Importer le fichier "+importFSGT
+    message+=     " sur le serveur https://licence2.fsgt.org\n"
+    message+= "    et mettre à jour les cases correpondantes de la colonne 'LICENCE_OK' de\n"
+    message+= "    "+baseDeDonneesODS+"\n"
+
+    # L'envoie à la liste des emails concernés
+    for adresse in open(chemins['listeEmails']):
+        sm.envoyerEmail(chemins['loginContact'],
+                        "[ROBOT_LICENCE] Nouvelle adhésion",
+                        adresse.strip(),
+                        message)
+
+def compteDocuments(telechargements):
+    """ Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences
+        importés dans le dossier renseigné dans 'telechargements'
+    """
+    nCertifs = 0
+    nLicences= 0
+    for root, dirs, fnames in os.walk(telechargements):
+        for fname in fnames:
+            if fname[:7] == "Certif_":
+                nCertifs += 1
+            elif fname[:7] == "Licence":
+                nLicences += 1
+    return nCertifs, nLicences
+
+def emptyDir(dirname):
+    """Fonction pour supprimer un dossier en le vidant préalablement """
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname)
+    os.mkdir(dirname)
+    
+def verifierDossier(dirname):
+    """ Si le dossier n'existe pas, le créer ! """
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+
+""" 2022.09.21 : Procédure appelée par adhesionPicEtCol.py
+    Amenée à disparaître """
+def export_old(nvllesAdhesions,dejaAdherents,chemins,compteurs):
     """ Cette fonction finalise le travail sur les adhésions :
         - Écriture dans les fichiers
             * {mutations,renouvellements,nouvos,erreurs}.csv
@@ -225,9 +504,9 @@ def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
         'EXT': [0,]
     }
     # écriture dans les fichiers
-    exportDict = ecrireFichiersFSGT(nvllesAdhesions,exportDict)
+    exportDict = ecrireFichiersFSGT_old(nvllesAdhesions,exportDict)
     # Écrire les logs, affichage écran et e-mails
-    logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs)
+    logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs)
     # fermeture des fichiers et suppression de fichiers vides
     for statut in ["ERR", "MUT"]:
         exportDict[statut][-1].close()
@@ -242,29 +521,26 @@ def export(nvllesAdhesions,dejaAdherents,chemins,compteurs):
     param.write('derniere_releve='+mf.today()+'\ndernier_lot=%i'%nLots)
     param.close()
 
-def compteDocuments(telechargements):
-    """ Cette fonction permet de compter le nombre de Certificats Médicaux et de Licences
-        importés dans le dossier local 'Telechargements/'
-    """
-    nCertifs = 0
-    nLicences= 0
-    for root, dirs, fnames in os.walk(telechargements):
-        for fname in fnames:
-            if fname[:7] == "Certif_":
-                nCertifs += 1
-            elif fname[:7] == "Licence":
-                nLicences += 1
-    return nCertifs, nLicences
 
+""" 2022.09.21 : Procédure appelée par adhesionPicEtCol.py
+    Amenée à disparaître """
+def ecrireFichiersFSGT_old(adherents,exportDict):
+    ### Remplissage des fichiers
+    for adherent in adherents:
+        # Exporter au Format FSGT pour import dans le serveur de licences
+        if adherent.erreur > 0:
+            print(adherent.toString("FSGT"), file=exportDict["ERR"][-1])
+            exportDict["ERR"][0] += 1
+        elif adherent.statut == "EXT":
+            exportDict["EXT"][0] += 1
+        else:
+            print(adherent.toString("FSGT"), file=exportDict[adherent.statut][-1])
+            exportDict[adherent.statut][0] += 1
+    return exportDict
 
-def emptyDir(dirname):
-    """Fonction pour supprimer un dossier en le vidant préalablement """
-    if os.path.exists(dirname):
-        shutil.rmtree(dirname)
-    os.mkdir(dirname)
-
-
-def logsEtMails(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
+""" 2022.09.21 : Procédure appelée par adhesionPicEtCol.py
+    Amenée à disparaître """
+def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
     # Constitution du message de log et pour le mail 
     message = ""
     message+= "*******************\n"

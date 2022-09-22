@@ -14,6 +14,7 @@ Created on Thu Nov 18 17:12:56 2021
         self.*
 """
 import myFunctions as mf
+import inputOutput as io
 import numpy as np
 import wget, os, shutil
 import re
@@ -129,6 +130,8 @@ class Adherent:
                 dictionnaire titreFSGT """
             for attribut in titreFSGT:
                 valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
+                if type(valeur) == str:
+                    valeur = valeur.strip()
                 if 'date' in attribut:
                     setattr(self,attribut,mf.verifierDate(valeur))
                 else:
@@ -145,6 +148,8 @@ class Adherent:
                 dictionnaire jsonToObject """
             for attribut in jsonToObject:
                 valeur = mf.fromJson(json,jsonToObject[attribut])
+                if type(valeur) == str:
+                    valeur = valeur.strip()
                 if 'date' in attribut:
                     setattr(self,attribut,mf.verifierDate(valeur))
                 else:
@@ -161,9 +166,9 @@ class Adherent:
             self.clubLicence   = ""
             self.lienCertif    = ""
             """ Puis indiquer nom, prénom et date de naissance"""
-            self.nom           = nom
-            self.prenom        = prenom
-            self.dateNaissance = mf.verifierDate(dateNaissance)
+            self.nom           = nom.strip()
+            self.prenom        = prenom.strip()
+            self.dateNaissance = mf.verifierDate(dateNaissance.strip())
             """ Si True, alors les notifications seront affichées à l'écran.
             Si False, elles seront uniquement stockés dans la chaine de caractères
             self.messageErreur """
@@ -178,6 +183,8 @@ class Adherent:
         self.premiereSaison  = {'indice':-1,'nom':''}
         self.derniereSaison  = {'indice':-1,'nom':''}
         self.documents       = []
+        """ Élements communs d'affichage des données """
+        self.noter("Adhérent·e : "+self.prenom+" "+self.nom+"  "+self.statut)
         
     def noter(self,*args):
         for arg in args:
@@ -229,47 +236,77 @@ class Adherent:
                 setattr(self,attribut,'"'+getattr(self,attribut)+'\t"')
         return
 
-    def trouveAdhesion(self,adhesionsOld):
+    def trouveAdhesion(self,adhesionsOld,nom='',prenom='',dateNaissance='',inverse=True):
         """ Cette fonction permet de rechercher un adhérent à partir de
         * son nom
         * son prénom
         * sa date de naissance
         dans un ancien fichier '*.csv'.
         """
+        # Par défaut on prend les nom, prenom et ddn de l'objet
+        if nom == '':
+            nom = self.nom
+        if prenom == '':
+            prenom = self.prenom
+        if dateNaissance == '': 
+            dateNaissance = self.dateNaissance
+        # Qu'on va rechercher dans les listes suivantes
         nomsOld    = adhesionsOld['noms']
         prenomsOld = adhesionsOld['prenoms']
         ddnOld     = adhesionsOld['ddn']
-        match  = np.where(nomsOld==self.nom)[0]
+        # Par des match.
+        match  = np.where(nomsOld==nom)[0]
         ligne  = -1
         if np.size(match) > 0:
-            newMatch = np.where(prenomsOld[match]==self.prenom)[0]
-            if (self.dateNaissance == '') and (np.size(newMatch) == 1):
+            newMatch = np.where(prenomsOld[match]==prenom)[0]
+            if (dateNaissance == '') and (np.size(newMatch) == 1):
                 ### Cas extrêmement rare où l'adhérent·e n'a pas fourni sa DdN 
                 ### et qu'on la retrouve dans les anciennes adhésions
                 self.noter(" * INFO_"+self.statut+": l'adhérent·e n'a pas fourni sa date de naissance.",
                            "je complète avec la base de données :")
-                self.noter(" * - Date de naissance fournie :",self.dateNaissance)
+                self.noter(" * - Date de naissance fournie :",dateNaissance)
                 self.noter(" * - Date de naissance trouvée :",ddnOld[match[newMatch]][0])
                 self.dateNaissance = ddnOld[match[newMatch]][0]
                 return match[newMatch][0]
             if np.size(newMatch) > 0:
-                lastMatch = np.where(ddnOld[match[newMatch]] == self.dateNaissance)[0]
+                lastMatch = np.where(ddnOld[match[newMatch]] == dateNaissance)[0]
                 if np.size(lastMatch) == 0:
                     self.noter(" * ERROR_"+self.statut+": J'ai trouvé ",
-                            self.nom+' '+self.prenom,
+                            nom+' '+prenom,
                             " mais pas avec la bonne date de naissance !")
                     self.noter(" * - Fichier                    :",adhesionsOld['fichier'])
-                    self.noter(" * - Nouvelle date de naissance :",self.dateNaissance)
+                    self.noter(" * - Nouvelle date de naissance :",dateNaissance)
                     self.noter(" * - Ancienne date de naissance :",ddnOld[match[newMatch]][0])
                     self.erreur += 1
                 elif np.size(lastMatch) > 1:
                     self.noter(" * ERROR_"+self.statut+": j'ai trouvé", np.size(lastMatch),
-                            'personnes appelées',self.nom,self.prenom,
-                            'nées le',self.dateNaissance,
+                            'personnes appelées',nom,prenom,
+                            'nées le',dateNaissance,
                             "dans le fichier ",adhesionsOld['fichier']," !")
                     self.erreur += 1
                 else:
                     ligne = match[newMatch[lastMatch]][0]
+        if inverse and ligne < 0:
+            """ Si on n'a pas trouvé la personne, c'est peut-être parce que le nom et le prénom sont inversés """
+            essai = self.trouveAdhesion(adhesionsOld,
+                                        nom=self.prenom.upper(),
+                                        prenom=self.nom.title(),
+                                        dateNaissance=self.dateNaissance,
+                                        inverse = False)
+            if essai >= 0:
+                nom    = self.prenom.upper()
+                prenom = self.nom.title()
+                nomInitial = self.prenomInitial
+                self.prenomInitial = self.nomInitial
+                self.nomInitial = nomInitial
+                
+                self.nom    = nom
+                self.prenom = prenom
+                self.noter(" * INFO_"+self.statut+": j'ai trouvé la personne en inversant nom et prénom.")
+                self.noter(" * - Nom    = "+self.nom)
+                self.noter(" * - Prenom = "+self.prenom)
+                self.noter(" * - DdN    = "+self.dateNaissance)
+                ligne = essai
         return ligne
 
     def verifierTarif(self):
@@ -278,7 +315,7 @@ class Adherent:
             déclaré
         """
         if (self.statut in ['EXT','4MS']) and self.typeAdhesion[:3] == 'LIC':
-            self.noter(" * INFO_"+self.statut+":","l'adhérent·e se déclare Extérieur/4MOIS mais a payé la licence")
+            self.noter(" * INFO_"+self.statut+":","l'adhérent·e se déclare "+self.statut+" mais a payé la licence")
             self.noter(" *           Je passe le statut temporairement en 'NVO'")
             self.statut = 'NVO'
         if self.statut != 'EXT' and self.typeAdhesion[:3] == 'EXT':
@@ -311,7 +348,7 @@ class Adherent:
             self.erreur += 1
         return self
     
-    def completerInfoPlusRecentes(self,toutesLesAdhesions):
+    def completerInfoPlusRecentes(self,toutesLesAdhesions,ecraser=False):
         indice = self.derniereSaison['indice']
         ligne  = self.historique[indice]
         """ On cherche d'abord le certif pour pouvoir remplacer le nom de rercherche ensuite """
@@ -323,10 +360,12 @@ class Adherent:
             self.noter(" DOSSIER de Recherche : ",dossierCM)
         """ Remplacement de tous les attributs par ceux stockés dans le *.ods """
         for attribut in titreFSGT:
-            if getattr(self,attribut) == '':
-                setattr(self,attribut,mf.getEntry(toutesLesAdhesions[indice]['tableau'],
-                                                  ligne,
-                                                  titreFSGT[attribut]))    
+            if (getattr(self,attribut) == '') or ecraser:
+                valeur = mf.getEntry(toutesLesAdhesions[indice]['tableau'],
+                                     ligne,
+                                     titreFSGT[attribut])
+                if (valeur != ''):
+                    setattr(self,attribut,valeur)    
         return self
         
 
@@ -340,7 +379,7 @@ class Adherent:
         self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
                       ", ligne ",self.historique[indice])
         self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
-                                         ligne=self.historique[indice])
+                                         ligne=self.historique[indice],afficherErreur=False)
         ### Mettre à jour les données si c'est un ancien adhérent non en cours
         if not self.adhesionEnCours:
             self.miseAJourStatut()
@@ -406,13 +445,16 @@ class Adherent:
         if self.numLicence == '' and self.derniereAdhesion.numLicence != '' :
             self.numLicence = self.derniereAdhesion.numLicence
         elif re.sub(r'[^0-9]','',self.numLicence) != re.sub(r'[^0-9]','',self.derniereAdhesion.numLicence):
-            self.noter(" * ERROR_"+self.statut+": licence numbers are different!")
+            self.noter(" * INFO_"+self.statut+": les numéros de licence sont différents !")
             self.noter(" * - Numéro de Licence l'an dernier :",self.derniereAdhesion.numLicence)
             self.noter(" * - Numéro de Licence cette année  :",self.numLicence)
-            self.numLicence = 'NUMLIC_INCONNU'
-            self.erreur += 1
+            if self.derniereAdhesion.numLicence != '':
+                self.noter(" * - Je prends le plus ancien !")
+                self.numLicence = self.derniereAdhesion.numLicence
+            else:
+                self.noter(" * - Je prends celui qui n'est pas vide !")                
         elif self.numLicence == '' and (self.statut == 'EXT' or self.statut == 'MUT'):
-            self.noter(' * INFO_'+self.statut+': Missing Licence Number!')
+            self.noter(' * INFO_'+self.statut+': Numéro de licence manquant !')
         return
 
     def miseAJourDateCertif(self):
@@ -425,6 +467,7 @@ class Adherent:
 
     def telechargerDocuments(self,chemins):
         telechargements = chemins['Telechargements']
+        io.verifierDossier(telechargements)
         if self.statut == 'EXT': ### Télécharger la licence
             self.certifOK   = 'EXT'
             self.dateCertif = 'EXT'
@@ -434,7 +477,7 @@ class Adherent:
             else:
                 fileName = wget.download(self.lienLicence,bar=None)
                 root,ext = os.path.splitext(fileName)
-                newFile  = telechargements+'Licence2021_'+self.clubLicence+'_'+self.prenom+'_'+self.nom+ext
+                newFile  = telechargements+'Licence'+chemins['saison']+'_'+self.clubLicence+'_'+self.prenom+'_'+self.nom+ext
                 os.rename(fileName,newFile)
                 return
         else: ### Télécharger le certificat médical ou prendre celui de l'an dernier
@@ -507,10 +550,10 @@ class Adherent:
             self.erreur += 1
         """ Vérifier le numéro de licence """
         if self.numLicence == '':
-            self.noter(' * WARNING:',"l'adhérent·e"+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
-            self.noter('            Aller voir sur https://licence2.fsgt.org')
+            self.noter(' * WARNING:',"l'adhérent·e "+self.prenom+" "+self.nom+" n'a pas de numéro de licence enregistré.")
+            self.noter('            À récupérer sur https://licence2.fsgt.org')
             self.erreur += 1
-        return
+        return self.erreur
 
     def trouveCertif(self,oldCertifDir):
         """ Cette fonction permet de chercher un certificat nommé

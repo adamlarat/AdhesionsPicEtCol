@@ -66,7 +66,6 @@ io.emptyDir(chemins['Telechargements'])
 ### Parcours de la liste téléchargées sur helloasso.com
 for entree in reversed(helloAsso_json):
     adherent = Adherent(json=entree)
-    adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.verifierTarif()
     adherent.construireHistorique(toutesLesAdhesions)
     adherent.mettreAJour(toutesLesAdhesions)
@@ -90,7 +89,6 @@ dejaAdherents = []
 nb_enCours = 0
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(adhesions=enCours_np,ligne=i)
-    adherent.noter("Adhérent·e : "+adherent.prenom+" "+adherent.nom+"  "+adherent.statut)
     adherent.verifierAdhesionEnCours(chemins['dossierCM'])
     dejaAdherents += (adherent,)
     nb_enCours += 1
@@ -102,4 +100,4 @@ compteurs = {
     'enCours'   : nb_enCours}
 
 """ Finalisation du travail et écriture dans les fichiers adhoc """
-io.export(nvllesAdhesions,dejaAdherents,chemins,compteurs)
+io.export_old(nvllesAdhesions,dejaAdherents,chemins,compteurs)

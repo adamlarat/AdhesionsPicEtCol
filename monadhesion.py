@@ -60,7 +60,7 @@ adherent = adherent.construireHistorique(toutesLesAdhesions)
 
 ### Si l'historique n'est pas vide
 if adherent.ancienAdherent:
-    adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions)
+    adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions,ecraser=True)
     sm.envoyerEmail(chemins['loginContact'],
                     sujet="Ton adhésion Pic&Col",
                     pour=adherent.email,
