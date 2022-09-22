@@ -282,7 +282,7 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
         
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
     #if not nvlleAdhesion.ancienAdherent:
-        #listesDiffusions(nvlleAdhesion)
+        #listesDiffusions(nvlleAdhesion,chemins)
 
     # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
     # mail récapitulatif des infos de Pic&Col pour les autres 
@@ -290,6 +290,16 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     
     # Envoyer les logs par mail
     #mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
+
+def listesDiffusions(nvlleAdhesion,chemins):
+    sm.envoyerEmail(login=chemins['loginContact'],
+                    sujet="Commande",
+                    pour='sympa@listes.picetcol38.fr',
+                    corps='ADD membres '+\
+                        nvlleAdhesion.email+' '+\
+                        nvlleAdhesion.prenom+' '+\
+                        nvlleAdhesion.nom)
+    return
 
 def nLignes(fichier):
     if os.path.exists(fichier):
@@ -349,7 +359,7 @@ def mailAdherent(nvlleAdhesion,chemins):
     enTeteTexte = html(message,'html.parser').find('div',{"class":"plain-text"}).string
     sm.envoyerEmail(chemins['loginContact'],
                     sujet="Bienvenu·e à Pic&Col",
-                    pour='adam@larat.fr',
+                    pour=nvlleAdhesion.email,
                     corps=enTeteTexte+fonctionnement, #en-tête texte plein et Markdown
                     html =style+message) # full HTML
     chemins['erreurExport'] += erreur

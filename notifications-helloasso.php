@@ -82,7 +82,7 @@
             $dossierAdhesions = "../".$saison."/";
             $fichierCourant = $dossierAdhesions."AdhesionsPicEtCol_".$saison.".ods";
             $fichierCSV     = $dossierAdhesions."AdhesionsPicEtCol_".$saison.".csv";
-            $dossierLogs    = "Logs/Static/"; //"Logs/".$logsName."/";
+            $dossierLogs    = "Logs/".$logsName."/"; //"Logs/Static/"; //"Logs/".$logsName."/";
             $fichierLogs    = $dossierLogs.$logsName.".log";
             $fichierJson    = $dossierLogs.$logsName.".json";
             $fichierBackup  = $dossierLogs."AdhesionsPicEtCol_".$saison.".ods.bak";
