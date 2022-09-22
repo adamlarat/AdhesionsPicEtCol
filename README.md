@@ -23,6 +23,6 @@ Le dossier d'adhésions doit ressembler à ça : `user@machine: ~/.../Adhesions$
 * La commande `python3 -m uno` ne devrait renvoyer aucune erreur
 * Installer `pylocalc` : `sudo pip3 install pylocalc`
 
-5. Installer les dépendances python : `sudo pip3 install numpy unidecode wget` Attention, ces modules python doivent être accessibles à tous les utilisateurs, en particulier www-data !
+5. Installer les dépendances python : `sudo pip3 install numpy unidecode wget markdow beautifulsoup4` Attention, ces modules python doivent être accessibles à tous les utilisateurs, en particulier www-data !
 6. Installer Java et le support Libreoffice\
    `sudo apt install default-jdk libreoffice-script-provider-python`

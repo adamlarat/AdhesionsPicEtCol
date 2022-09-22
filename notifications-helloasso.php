@@ -56,6 +56,7 @@
 
       // À supprimer
       echo("Here is PHP...\n");
+      setlocale(LC_CTYPE, "fr_FR.UTF-8");
       $date      = date("Ymd-His");
       $prenom    = "Inconnu";
       $nom       = "INCONNU";
@@ -102,9 +103,9 @@
             }
 
             /* Sauvegarde de la notification HelloAsso au format JSON */
-            $pythonData = json_encode($jsonData,
+            $pythonData = $jsonFile; /*json_encode($jsonData,
                                       JSON_UNESCAPED_UNICODE|
-                                      JSON_UNESCAPED_SLASHES);
+                                      JSON_UNESCAPED_SLASHES);*/
             if(!file_put_contents($fichierJson,$pythonData)){
               fwrite($logs,"La sauvegarde des données JSON a échoué !\n");
             }
