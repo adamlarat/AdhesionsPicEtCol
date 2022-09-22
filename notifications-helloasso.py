@@ -65,14 +65,16 @@ nouvo.dateInscription = mf.verifierDate(jsonData['data']['date'])
 nouvo.verifierTarif()
 ### Construit l'historique de l'adhérent·e, à partir de nom, prénom, ddn
 nouvo.construireHistorique(toutesLesAdhesions)
+if nouvo.adhesionEnCours:
+    print(" * ERROR : "+nouvo.prenom+" "+nouvo.nom+" est déjà adhérent·e cette année")
+    print("           Cette notification a déjà été traitée. Je m'arrête là !")
+    sys.exit(-1)
 ### Compléter les infos éventuellement manquantes.
 nouvo.mettreAJour(toutesLesAdhesions)
-### Ne rien faire si l'adhésion a déjà été enregistrée et stockée dans les adhésions en cours
-if not nouvo.adhesionEnCours:
-    ### Téléchargement de la licence ou du CM. Récupération du vieux CM si moins de 3 ans
-    nouvo.telechargerDocuments(chemins)
-    ### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
-    nouvo.formaterPourExport()
+### Téléchargement de la licence ou du CM. Récupération du vieux CM si moins de 3 ans
+nouvo.telechargerDocuments(chemins)
+### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
+nouvo.formaterPourExport()
 
 print("**************************************")
 print("Vérification des adhésions en cours...")
