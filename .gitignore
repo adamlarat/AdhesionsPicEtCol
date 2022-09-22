@@ -1,8 +1,14 @@
 .*.swp
 *.bak
 *.old
+*.tgz
+*.zip
 *.csv
-*.{jpg,jpeg,pdf,png}
+*.json
+*.jpg
+*.jpeg
+*.pdf
+*.png
 CM/*
 __pycache__/*
 .spyproject/*
@@ -10,11 +16,8 @@ __pycache__/*
 Essais/*
 Telechargements/*
 Logs/*
-cookie*.txt
 Emails/*
 CoffreFort/*
 nextcloudRescan.sh
-TODO.txt
-*.json
 Dumps/*
 convert*.php
