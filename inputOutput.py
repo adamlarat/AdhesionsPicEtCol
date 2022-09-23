@@ -15,6 +15,7 @@ import helloasso_api as hapi
 import glob as glob
 from markdown import markdown
 from bs4 import BeautifulSoup as html
+from datetime.datetime import now
 
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
@@ -274,12 +275,14 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     """
     # chaîne de caractères pour récupérer les erreurs lors de l'export
     chemins['erreurExport'] = ''
-    
+    print(now().strftime("%H%M%S")," : ","Écriture ODS ") 
     # Écriture dans le fichier ODS des adhésions en cours
     miseAJourAdhesionsEnCours((nvlleAdhesion,),chemins)
+    print(now().strftime("%H%M%S")," : ","Écriture CSV ") 
     # Écriture dans les fichiers FSGT
     chemins = ecrireFichiersFSGT((nvlleAdhesion,),chemins)
         
+    print(now().strftime("%H%M%S")," : ","Mails ") 
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
     if not nvlleAdhesion.ancienAdherent:
         listesDiffusions(nvlleAdhesion,chemins)
@@ -290,6 +293,7 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     
     # Envoyer les logs par mail
     mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
+    print(now().strftime("%H%M%S")," : ","Fin Export ") 
 
 def listesDiffusions(nvlleAdhesion,chemins):
     sm.envoyerEmail(login=chemins['loginContact'],

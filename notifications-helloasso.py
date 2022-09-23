@@ -10,7 +10,9 @@ import myFunctions as mf
 import inputOutput as io
 import numpy as np
 from Adherent import Adherent
+from datetime.datetime import now
 
+print(now().strftime("%H%M%S")," : ","Début…") 
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir la notification sous forme de fichier JSON !")
@@ -21,6 +23,8 @@ if len(sys.argv) < 2:
 else:
     jsonData = json.loads(sys.argv[1])
         
+print(now().strftime("%H%M%S")," : ","Chemins") 
+
 saison           = mf.saison()
 dossierLogs      = "Logs/"
 dossierAdhesions = "../"+saison+'/'
@@ -46,9 +50,11 @@ io.verifierDossier(chemins['dossierCM'])
 io.verifierDossier(chemins['dossierATraiter'])
 io.verifierDossier(chemins['Telechargements'])
 
+print(now().strftime("%H%M%S")," : ","Charge adhésions") 
 ### Charger toutes les précédentes saisons en mémoire
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
+print(now().strftime("%H%M%S")," : ","Traitement") 
 print("**************************************")
 print("Traitement de la nouvelle adhésion ...")
 print("**************************************")
@@ -75,6 +81,7 @@ nouvo.mettreAJour(toutesLesAdhesions)
 nouvo.telechargerDocuments(chemins)
 ### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
 nouvo.formaterPourExport()
+print(now().strftime("%H%M%S")," : ","Vérif ") 
 
 print("**************************************")
 print("Vérification des adhésions en cours...")
@@ -94,7 +101,10 @@ for i in range(1,Nb_enCours+1):
     erreurEnCours    += erreur
 if erreurEnCours == 0:
     print("  Toutes les adhésions en cours sont nickels !")
+
+print(now().strftime("%H%M%S")," : ","Export ") 
     
 """ Finalisation du travail et écriture dans les fichiers adhoc """
 io.export(nouvo,adhesionsEnCours,chemins)
+print(now().strftime("%H%M%S")," : ","Fin ") 
 
