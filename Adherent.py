@@ -229,12 +229,6 @@ class Adherent:
             self.typeLicence   = 'EXT'      if self.statut == 'EXT' else 'SAIS' if self.statut == '4MS' else 'OMNI'
         if self.assurage == '':
             self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
-        ### Ajouter des doubles quotes pour certains champs
-        for attribut in titreFSGT:
-            if attribut in ['nom','prenom','adresse','codePostal','ville','telephone','email']:
-                setattr(self,attribut,'"'+getattr(self,attribut)+'"')
-            if attribut == 'contactUrgence':
-                setattr(self,attribut,'"'+getattr(self,attribut)+'\t"')
         return
 
     def trouveAdhesion(self,adhesionsOld,nom='',prenom='',dateNaissance='',inverse=True):
@@ -575,24 +569,31 @@ class Adherent:
         self.erreur += 1
         return 'Aucun document trouvé pour '+self.prenom+' '+self.nom
 
+    def exportAttribut(self,attribut):
+        ### Ajouter des doubles quotes pour certains champs
+        if attribut in ['nom','prenom','adresse','codePostal','ville','telephone','email']:
+            return '"'+getattr(self,attribut)+'"'
+        if attribut == 'contactUrgence':
+            return '"'+getattr(self,attribut)+'\t"'
+        return getattr(self,attribut)
 
     def toString(self,form='ALL'):
         chaine = ''
         if form == 'FSGT':
             for attribut in list(titreFSGT)[2:24]:
-                chaine += getattr(self,attribut)+';'
+                chaine += self.exportAttribut(attribut)+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
         elif form == 'HTML':
             chaine += "<ul>\n"
             for item in exportWeb:
-                chaine += "<li> <strong> "+item+" : </strong> "+getattr(self,exportWeb[item])+"\n"
+                chaine += "<li> <strong> "+item+" : </strong> "+self.exportAttribut(exportWeb[item])+"\n"
             chaine += "</ul>"
         elif form == 'plain':
             for item in exportWeb:
-                chaine += item+" : "+getattr(self,exportWeb[item])+"\n"
+                chaine += item+" : "+self.exportAttribut(exportWeb[item])+"\n"
         else:
             for attribut in titreFSGT:
-                chaine += getattr(self,attribut)+';'
+                chaine += self.exportAttribut(attribut)+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
         return chaine 
 

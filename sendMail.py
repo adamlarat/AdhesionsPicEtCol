@@ -24,6 +24,11 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     email["To"]      = pour
     email["Cc"]      = cc
     email["Bcc"]     = bcc
+    destinataires = (pour,) if (type(pour) == str) else pour
+    if cc != '':
+        destinataires += (cc,) if (type(cc) == str) else cc
+    if bcc != '': 
+        destinataires += (bcc,) if (type(bcc) == str) else bcc
     
     if html != "": 
         email.attach(MIMEText(html,"html"))
@@ -50,7 +55,7 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     with smtplib.SMTP(serveurSMTP, port) as serveur:
         serveur.starttls(context=context)
         serveur.login(adresse,password)
-        serveur.sendmail(adresse,pour,email.as_string())
+        serveur.sendmail(adresse,destinataires,email.as_string())
         
 def mask(chain,debut,fin):
     long = len(chain)

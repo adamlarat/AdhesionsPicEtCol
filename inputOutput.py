@@ -314,15 +314,21 @@ def mailAdherent(nvlleAdhesion,chemins):
     ### La structure HTML du message est stockée dans chemins['mailAdherent']
     message = ''
     erreur  = ''
+    headerFooter = ''
     try:
         with open(chemins['mailAdherent'],'r') as mail:
             for line in mail:
-                message += line+'\n'
+                headerFooter += line
     except:
         erreur += " * ERREUR : le fichier "+chemins['mailAdherent']+" ne s'est pas ouvert correctement\n"
         erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
         return
-    message=message.replace('PRENOM',nvlleAdhesion.prenom.replace('"',''))
+    headerFooter     = headerFooter.replace('PRENOM',nvlleAdhesion.prenom)
+    headerNouvo      = str(html(headerFooter,'html.parser').find('div',{"class":"nouvo"}))
+    headerReadhesion = str(html(headerFooter,'html.parser').find('div',{"class":"readhesion"}))
+    headerPlain      = str(html(headerFooter,'html.parser').find('div',{"class":"plain-text"}).string)
+    divFonctionnement= str(html(headerFooter,'html.parser').find('div',{"class":"fonctionnement"}))
+    footer           = str(html(headerFooter,'html.parser').find('div',{"class":"footer"}))
     
     ### Le contenu de la lettre d'information est stockée dans chemins['fonctionnementPicEtCol']
     ### sous format Markdown
@@ -330,14 +336,12 @@ def mailAdherent(nvlleAdhesion,chemins):
     try:
         with open(chemins['fonctionnementPicEtCol'],'r') as mail:
             for line in mail:
-                fonctionnement += line+'\n'
+                fonctionnement += line
     except:
         erreur += " * ERREUR : le fichier "+chemins['fonctionnementPicEtCol']+" ne s'est pas ouvert correctement\n"
         erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
         return
             
-    ### Inclusion du contenu dans le HTML
-    message = message.replace('FONCTIONNEMENT',markdown(fonctionnement))
     
     ### Gestion du style. Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
     nouvo      = ''
@@ -345,8 +349,14 @@ def mailAdherent(nvlleAdhesion,chemins):
     disparaitre= 'display:none;'
     if nvlleAdhesion.ancienAdherent:
         nouvo = disparaitre
+        message = headerReadhesion
     else:
         readhesion = disparaitre
+        message = headerNouvo
+    message += divFonctionnement+footer
+    ### Inclusion du contenu dans le HTML
+    message = message.replace('FONCTIONNEMENT',markdown(fonctionnement))
+    
     style = ''\
     +"<style>"\
     +  "h3 {text-decoration:underline;margin: 30px 0px 0px 0px;}"\
@@ -357,11 +367,10 @@ def mailAdherent(nvlleAdhesion,chemins):
     +  ".fonctionnement {margin: 0 0 0 30px;}"\
     +"</style>"
     
-    enTeteTexte = html(message,'html.parser').find('div',{"class":"plain-text"}).string
     sm.envoyerEmail(chemins['loginContact'],
                     sujet="Bienvenu·e à Pic&Col",
                     pour=nvlleAdhesion.email,
-                    corps=enTeteTexte+fonctionnement, #en-tête texte plein et Markdown
+                    corps=headerPlain+fonctionnement+footer, #en-tête texte plein et Markdown
                     html =style+message,
                     bcc = 'adam@larat.fr') # full HTML
     chemins['erreurExport'] += erreur
