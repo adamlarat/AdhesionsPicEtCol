@@ -10,6 +10,7 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import make_msgid
 
 
 def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
@@ -24,6 +25,7 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     email["To"]      = pour
     email["Cc"]      = cc
     email["Bcc"]     = bcc
+    email['message-id'] = make_msgid(domain=adresse.split('@')[1])
     destinataires = (pour,) if (type(pour) == str) else pour
     if cc != '':
         destinataires += (cc,) if (type(cc) == str) else cc
@@ -32,8 +34,7 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     
     if html != "": 
         email.attach(MIMEText(html,"html"))
-    else:
-        email.attach(MIMEText(corps,"plain"))
+    email.attach(MIMEText(corps,"plain"))
         
     for pjointe in pjointes: # Attacher des pièces jointes
         part = MIMEBase("application", "octet-stream")
@@ -66,4 +67,5 @@ def maskEmail(adresse):
     return '@'.join([mask(part,2,1) for part in adresse.split('@')])
     
 if __name__ == '__main__':
-    envoyerEmail('CoffreFort/login_contact.txt','Essai de sendMail.py','adam@larat.fr','Coucou !')
+    import myFunctions as mf 
+    envoyerEmail(mf.myLogin('CoffreFort/login_contact.txt'),'Essai de sendMail.py','adam@larat.fr','Coucou !')
