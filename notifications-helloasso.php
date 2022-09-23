@@ -54,20 +54,9 @@
               $output = array();
               exec("ps aux | grep -i \"screen -dmS ".$screenId."\" | grep -v grep",$output);
               if (empty($output)) {
-                echo("Creating a screen session\n");
                 exec("screen -dmS ".$screenId);
               }
-              else {
-                echo("Here is the output content:\n".$output."\n");
-    foreach ($output as $line) {
-      echo($line."\n"); 
-    }
-                echo(empty($output)?"True":"False"."\n");
-              }
               exec("screen -X -S ".$screenId." stuff \"php -f asynchronous.php ".$fichierJson." > ".$screenLogs." 2>&1;^M\"");
-              echo("Screen ID   = ".$screenId."\n");
-              echo("Screen Logs = ".$screenLogs."\n");
-              echo("Json File   = ".$fichierJson."\n");
             }
           }
         }
@@ -87,7 +76,7 @@
           fwrite($logs,"\n");
         }
       }
-      echo("Everything is OK! Thank you!\n");
+      echo("    Everything is OK! Thank you!\n");
     ?>
   </body>
 <html>

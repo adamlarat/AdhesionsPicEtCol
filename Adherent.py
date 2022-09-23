@@ -208,6 +208,7 @@ class Adherent:
         self.numLicence    = re.sub(r'[^0-9]','',self.numLicence)
         self.typeAdhesion  = mf.typeAdhesion(self.typeAdhesion)
         self.statut        = mf.statut(self.statut)
+        self.clubLicence   = self.clubLicence.replace(' ','-')
         if(self.dateCertif == ''):
             self.dateCertif = '01/01/1970'
         ### Modification des adresses pour le téléchargement des documents joints
