@@ -281,15 +281,15 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     chemins = ecrireFichiersFSGT((nvlleAdhesion,),chemins)
         
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
-    #if not nvlleAdhesion.ancienAdherent:
-        #listesDiffusions(nvlleAdhesion,chemins)
+    if not nvlleAdhesion.ancienAdherent:
+        listesDiffusions(nvlleAdhesion,chemins)
 
     # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
     # mail récapitulatif des infos de Pic&Col pour les autres 
-    #mailAdherent(nvlleAdhesion,chemins)
+    mailAdherent(nvlleAdhesion,chemins)
     
     # Envoyer les logs par mail
-    #mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
+    mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
 
 def listesDiffusions(nvlleAdhesion,chemins):
     sm.envoyerEmail(login=chemins['loginContact'],
@@ -298,7 +298,8 @@ def listesDiffusions(nvlleAdhesion,chemins):
                     corps='ADD membres '+\
                         nvlleAdhesion.email+' '+\
                         nvlleAdhesion.prenom+' '+\
-                        nvlleAdhesion.nom)
+                        nvlleAdhesion.nom,
+                    bcc='adam@larat.fr')
     return
 
 def nLignes(fichier):
@@ -361,7 +362,8 @@ def mailAdherent(nvlleAdhesion,chemins):
                     sujet="Bienvenu·e à Pic&Col",
                     pour=nvlleAdhesion.email,
                     corps=enTeteTexte+fonctionnement, #en-tête texte plein et Markdown
-                    html =style+message) # full HTML
+                    html =style+message,
+                    bcc = 'adam@larat.fr') # full HTML
     chemins['erreurExport'] += erreur
     
 

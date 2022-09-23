@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-def envoyerEmail(login,sujet,pour,corps,html="",pjointes=[]):
+def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     port        = login.port
     serveurSMTP = login.serveur_smtp
     adresse     = login.adresse
@@ -22,6 +22,8 @@ def envoyerEmail(login,sujet,pour,corps,html="",pjointes=[]):
     email["Subject"] = sujet
     email["From"]    = adresse
     email["To"]      = pour
+    email["Cc"]      = cc
+    email["Bcc"]     = bcc
     
     if html != "": 
         email.attach(MIMEText(html,"html"))
