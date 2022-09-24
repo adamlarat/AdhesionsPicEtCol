@@ -19,7 +19,7 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     adresse     = login.adresse
     password    = login.password
     
-    email = MIMEMultipart()
+    email = MIMEMultipart("alternative")
     email["Subject"] = sujet
     email["From"]    = adresse
     email["To"]      = pour
@@ -32,9 +32,9 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     if bcc != '': 
         destinataires += (bcc,) if (type(bcc) == str) else bcc
     
+    email.attach(MIMEText(corps,"plain"))
     if html != "": 
         email.attach(MIMEText(html,"html"))
-    email.attach(MIMEText(corps,"plain"))
         
     for pjointe in pjointes: # Attacher des pièces jointes
         part = MIMEBase("application", "octet-stream")

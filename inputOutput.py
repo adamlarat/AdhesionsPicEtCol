@@ -7,7 +7,7 @@ Created on Sat Nov 20 10:21:01 2021
 """
 
 import numpy as np
-import os, shutil
+import os, shutil,re
 import myFunctions as mf
 import pylocalc as pyods
 import sendMail as sm
@@ -15,7 +15,7 @@ import helloasso_api as hapi
 import glob as glob
 from markdown import markdown
 from bs4 import BeautifulSoup as html
-from datetime.datetime import now
+import datetime as dt
 
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
@@ -275,14 +275,14 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     """
     # chaîne de caractères pour récupérer les erreurs lors de l'export
     chemins['erreurExport'] = ''
-    print(now().strftime("%H%M%S")," : ","Écriture ODS ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture ODS ") 
     # Écriture dans le fichier ODS des adhésions en cours
     miseAJourAdhesionsEnCours((nvlleAdhesion,),chemins)
-    print(now().strftime("%H%M%S")," : ","Écriture CSV ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ") 
     # Écriture dans les fichiers FSGT
     chemins = ecrireFichiersFSGT((nvlleAdhesion,),chemins)
         
-    print(now().strftime("%H%M%S")," : ","Mails ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ") 
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
     if not nvlleAdhesion.ancienAdherent:
         listesDiffusions(nvlleAdhesion,chemins)
@@ -293,7 +293,7 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     
     # Envoyer les logs par mail
     mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
-    print(now().strftime("%H%M%S")," : ","Fin Export ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ") 
 
 def listesDiffusions(nvlleAdhesion,chemins):
     sm.envoyerEmail(login=chemins['loginContact'],
@@ -316,24 +316,16 @@ def mailAdherent(nvlleAdhesion,chemins):
     """ Cette fonction crée un mail informatif adapté à la nouvelle adhésion 
         et l'envoie à l'adhérent·e """
     ### La structure HTML du message est stockée dans chemins['mailAdherent']
-    message = ''
     erreur  = ''
-    headerFooter = ''
+    message = ''
     try:
         with open(chemins['mailAdherent'],'r') as mail:
             for line in mail:
-                headerFooter += line
+                message += line
     except:
         erreur += " * ERREUR : le fichier "+chemins['mailAdherent']+" ne s'est pas ouvert correctement\n"
         erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
         return
-    headerFooter     = headerFooter.replace('PRENOM',nvlleAdhesion.prenom)
-    headerNouvo      = str(html(headerFooter,'html.parser').find('div',{"class":"nouvo"}))
-    headerReadhesion = str(html(headerFooter,'html.parser').find('div',{"class":"readhesion"}))
-    headerPlain      = str(html(headerFooter,'html.parser').find('div',{"class":"plain-text"}).string)
-    divFonctionnement= str(html(headerFooter,'html.parser').find('div',{"class":"fonctionnement"}))
-    footer           = str(html(headerFooter,'html.parser').find('div',{"class":"footer"}))
-    
     ### Le contenu de la lettre d'information est stockée dans chemins['fonctionnementPicEtCol']
     ### sous format Markdown
     fonctionnement=''
@@ -344,43 +336,43 @@ def mailAdherent(nvlleAdhesion,chemins):
     except:
         erreur += " * ERREUR : le fichier "+chemins['fonctionnementPicEtCol']+" ne s'est pas ouvert correctement\n"
         erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
-        return
-            
+        return     
+    ### Pour qu'une liste soit reconnue comme telle par Markdown, 
+    ### il faut qu'elle soit précédée d'une ligne blanche
+    ### Cette régex fait le travail...
+    fonctionnement = re.sub(r'\n([^\n]*)\n\*',r'\n\1\n\n*',fonctionnement)+'\n'
     
-    ### Gestion du style. Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
+    ### Gestion du style.
+    ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
     nouvo      = ''
     readhesion = ''
     disparaitre= 'display:none;'
     if nvlleAdhesion.ancienAdherent:
         nouvo = disparaitre
-        message = headerReadhesion
     else:
         readhesion = disparaitre
-        message = headerNouvo
-    message += divFonctionnement+footer
-    ### Inclusion du contenu dans le HTML
-    message = message.replace('FONCTIONNEMENT',markdown(fonctionnement))
+        
+    ### Remplacement des variables dans le contenu dans le HTML
+    message = message.replace('PRENOM',nvlleAdhesion.prenom)\
+                     .replace('STYLE_NOUVO',nouvo)\
+                     .replace('STYLE_READHESION',readhesion)\
+                     .replace('FONCTIONNEMENT',markdown(fonctionnement))
+
+    ### Version Plain-text
+    headerPlain      = str(html(message,'html.parser').find('div',{"class":"plain-text"}).string)
+    footer           = "\n\n".join([x.string for x in html(message,'html.parser')\
+                                                        .find('div',{"class":"footer"})\
+                                                        .findAll('p')])
+    text = headerPlain+fonctionnement+footer
     
-    style = ''\
-    +"<style>"\
-    +  "h3 {text-decoration:underline;margin: 30px 0px 0px 0px;}"\
-    +  "h4 {margin: 20px 0px -12px 0px;}"\
-    +  ".nouvo {"+nouvo+"}"\
-    +  ".readhesion {"+readhesion+"}"\
-    +  ".plain-text {"+disparaitre+"}"\
-    +  ".fonctionnement {margin: 0 0 0 30px;}"\
-    +"</style>"
-    
+    ### Envoi du mail
     sm.envoyerEmail(chemins['loginContact'],
-                    sujet="Bienvenu·e à Pic&Col",
-                    pour=nvlleAdhesion.email,
-                    corps=headerPlain+fonctionnement+footer, #en-tête texte plein et Markdown
-                    html =style+message,
-                    bcc = 'adam@larat.fr') # full HTML
-    chemins['erreurExport'] += erreur
+                    sujet = "Bienvenu·e à Pic&Col",
+                    pour  = nvlleAdhesion.email,
+                    corps = text, #en-tête texte plein et Markdown
+                    html  = message,
+                    bcc   = 'adam@larat.fr') # full HTML
     
-
-
 def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
     # Constitution du message de log et pour le mail 
     message = ""
@@ -649,5 +641,17 @@ def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
                         "[ROBOT_LICENCE] Point sur les adhésions Pic&Col",
                         adresse.strip(),
                         message)
-    
+
+if __name__ == '__main__':
+    from Adherent import Adherent
+    moi = Adherent(nom='Larat',prenom='Adam',dateNaissance='01/01/1980',afficherErreur=False)
+    moi.email = 'adam.larat@gmail.com' 
+    moi.ancienAdherent = True
+    chemins = {
+        'mailAdherent'           : 'CoffreFort/mailAdherent.html',
+        'fonctionnementPicEtCol' : 'CoffreFort/fonctionnementPicEtCol.md',
+        'loginContact'           : mf.myLogin("CoffreFort/login_contact.txt"),
+        'erreurExport'           : ''
+    }
+    mailAdherent(moi, chemins)
     
