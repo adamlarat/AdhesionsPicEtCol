@@ -326,6 +326,11 @@ def mailAdherent(nvlleAdhesion,chemins):
         erreur += " * ERREUR : le fichier "+chemins['mailAdherent']+" ne s'est pas ouvert correctement\n"
         erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
         return
+    ### Parsing HTML
+    soup = html(message,'html.parser')
+    divs = {}
+    for div in soup.find_all('div'):
+        divs[div.get('id')] = div
     ### Le contenu de la lettre d'information est stockée dans chemins['fonctionnementPicEtCol']
     ### sous format Markdown
     fonctionnement=''
@@ -342,28 +347,38 @@ def mailAdherent(nvlleAdhesion,chemins):
     ### Cette régex fait le travail...
     fonctionnement = re.sub(r'\n([^\n]*)\n\*',r'\n\1\n\n*',fonctionnement)+'\n'
     
-    ### Gestion du style.
+    ### Version Plain-text
+    headerPlain  = str(divs["plain-text"].string)
+    footer       = "\n\n".join([x.string for x in divs["footer"].findAll('p')])
+    text         = headerPlain+fonctionnement+footer
+    ### Gestion du style HTML
     ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
     nouvo      = ''
     readhesion = ''
     disparaitre= 'display:none;'
+    # Suppression explicite du div plain-text
+    divs['plain-text'].decompose()
     if nvlleAdhesion.ancienAdherent:
         nouvo = disparaitre
+        divs['nouvo'].decompose()
     else:
         readhesion = disparaitre
+        divs['readhesion'].decompose()
         
     ### Remplacement des variables dans le contenu dans le HTML
-    message = message.replace('PRENOM',nvlleAdhesion.prenom)\
-                     .replace('STYLE_NOUVO',nouvo)\
-                     .replace('STYLE_READHESION',readhesion)\
-                     .replace('FONCTIONNEMENT',markdown(fonctionnement))
-
-    ### Version Plain-text
-    headerPlain      = str(html(message,'html.parser').find('div',{"class":"plain-text"}).string)
-    footer           = "\n\n".join([x.string for x in html(message,'html.parser')\
-                                                        .find('div',{"class":"footer"})\
-                                                        .findAll('p')])
-    text = headerPlain+fonctionnement+footer
+    message = str(soup).replace('PRENOM',nvlleAdhesion.prenom)\
+                       .replace('STYLE_NOUVO',nouvo)\
+                       .replace('STYLE_READHESION',readhesion)\
+                       .replace('FONCTIONNEMENT',markdown(fonctionnement))
+    text    = text.replace('PRENOM',nvlleAdhesion.prenom)
+                       
+    ### Sauvegarde des messages créés
+    bak = open(chemins['dossierLogs']+'mailAdherent.html','w')
+    print(message,file=bak)
+    print("--------------------------------------",file=bak)
+    print("--------- PLAIN-TEXT -----------------",file=bak)
+    print("--------------------------------------",file=bak)
+    print(text,file=bak)
     
     ### Envoi du mail
     sm.envoyerEmail(chemins['loginContact'],
@@ -651,7 +666,8 @@ if __name__ == '__main__':
         'mailAdherent'           : 'CoffreFort/mailAdherent.html',
         'fonctionnementPicEtCol' : 'CoffreFort/fonctionnementPicEtCol.md',
         'loginContact'           : mf.myLogin("CoffreFort/login_contact.txt"),
-        'erreurExport'           : ''
+        'erreurExport'           : '',
+        'dossierLogs'            : 'Logs/'
     }
     mailAdherent(moi, chemins)
     

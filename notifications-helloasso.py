@@ -5,7 +5,7 @@ Created on Tue Sep 13 10:30:23 2022
 
 @author: larat
 """
-import sys,json
+import os,sys,json
 import myFunctions as mf
 import inputOutput as io
 import numpy as np
@@ -26,7 +26,7 @@ else:
 print(now().strftime("%H%M%S")," : ","Chemins") 
 
 saison           = mf.saison()
-dossierLogs      = "Logs/"
+dossierLogs      = os.path.split(sys.argv[1])[0]+'/'
 dossierAdhesions = "../"+saison+'/'
 dossierATraiter  = dossierAdhesions+'ATraiter/'
 chemins = {
