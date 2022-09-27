@@ -21,12 +21,20 @@ if len(sys.argv) < 2:
     print()
     sys.exit(-1)
 else:
-    jsonData = json.loads(sys.argv[1])
+    jsonFile = open(sys.argv[1],'r')
+    if jsonFile:
+        jsonData = json.load(jsonFile)
+        jsonFile.close()
+    else:
+        print("Le fichier Json n'est pas correctement lisible !")
+        print("Abandon !")
+        sys.exit(-1)
         
 print(now().strftime("%H%M%S")," : ","Chemins") 
 
 saison           = mf.saison()
 dossierLogs      = os.path.split(sys.argv[1])[0]+'/'
+print("Dossier Logs = ",dossierLogs)
 dossierAdhesions = "../"+saison+'/'
 dossierATraiter  = dossierAdhesions+'ATraiter/'
 chemins = {

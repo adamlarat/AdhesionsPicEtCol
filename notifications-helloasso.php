@@ -43,7 +43,7 @@
             $logs = fopen($fichierLogs,"w");
 
             /* Sauvegarde de la notification HelloAsso au format JSON */
-            if(!file_put_contents($fichierJson,$jsonFile)){
+            if(!file_put_contents($fichierJson,json_encode($jsonData,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE))){
               fwrite($logs,"La sauvegarde des données JSON a échoué !\n");
               fclose($logs);
             }
