@@ -297,12 +297,12 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
 
 def listesDiffusions(nvlleAdhesion,chemins):
     sm.envoyerEmail(login=chemins['loginContact'],
-                    sujet='ADD membres '+\
+                    sujet='Commande sympa',
+                    pour='sympa@listes.picetcol38.fr',
+                    corps='ADD membres '+\
                         nvlleAdhesion.email+' '+\
                         nvlleAdhesion.prenom+' '+\
                         nvlleAdhesion.nom,
-                    pour='sympa@listes.picetcol38.fr',
-                    corps="",
                     bcc='adam@larat.fr')
     return
 

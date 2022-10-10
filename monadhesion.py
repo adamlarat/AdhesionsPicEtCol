@@ -61,14 +61,15 @@ adherent = adherent.construireHistorique(toutesLesAdhesions)
 ### Si l'historique n'est pas vide
 if adherent.ancienAdherent:
     adherent = adherent.completerInfoPlusRecentes(toutesLesAdhesions,ecraser=True)
+    destinataire = adherent.email
     sm.envoyerEmail(chemins['loginContact'],
                     sujet="Ton adhésion Pic&Col",
-                    pour=adherent.email,
+                    pour=destinataire,
                     corps=adherent.toString('plain'),
                     html =adherent.toString('HTML'),
                     pjointes=adherent.documents)
-    print("Les informations te concernant ont été envoyées à l'adresse ",
-                          sm.maskEmail(adherent.email))
+    print("la Les informations te concernant ont été envoyées à l'adresse ",
+                          sm.maskEmail(destinataire))
 else:
     print("ERREUR : 0 personnes trouvé·e·s avec ces valeurs renseignées.")
     print("Nom : "+nom)
