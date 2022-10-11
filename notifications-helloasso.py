@@ -63,32 +63,34 @@ print(now().strftime("%H%M%S")," : ","Charge adhésions")
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
 print(now().strftime("%H%M%S")," : ","Traitement") 
-print("**************************************")
-print("Traitement de la nouvelle adhésion ...")
-print("**************************************")
-""" Création de l'adhérent·e à partir du fichier JSON"""
-nouvo = Adherent(json=jsonData['data']['items'][0])
-#### Au cas où...
-if len(jsonData['data']['items']) != 1:
-    nouvo.noter(" * ERROR : la liste 'items' n'a pas le bon nombre d'éléments. ",
-                len(jsonData['data']['items']))
-    nouvo.erreur += 1
-### Le format des notifications est différent. La date n'est pas accessible dans jsonData['data']['items'][0]
-nouvo.dateInscription = mf.verifierDate(jsonData['data']['date'])
-### Vérifie que le tarif correspond bien au statut et à la licence demandée
-nouvo.verifierTarif()
-### Construit l'historique de l'adhérent·e, à partir de nom, prénom, ddn
-nouvo.construireHistorique(toutesLesAdhesions)
-if nouvo.adhesionEnCours:
-    print(" * ERROR : "+nouvo.prenom+" "+nouvo.nom+" est déjà adhérent·e cette année")
-    print("           Cette notification a déjà été traitée. Je m'arrête là !")
+print("*******************************************")
+print("Traitement de(s) nouvelle(s) adhésion(s)...")
+print("*******************************************")
+date_notification = jsonData['data']['date']
+nvllesAdhesions   = []
+for entree in jsonData['data']['items']:
+    """ Création de l'adhérent·e à partir du fichier JSON"""
+    nouvo = Adherent(json=entree)
+    ### Le format des notifications est différent. La date n'est pas accessible dans jsonData['data']['items'][0]
+    nouvo.dateInscription = mf.verifierDate(date_notification)
+    ### Vérifie que le tarif correspond bien au statut et à la licence demandée
+    nouvo.verifierTarif()
+    ### Construit l'historique de l'adhérent·e, à partir de nom, prénom, ddn
+    nouvo.construireHistorique(toutesLesAdhesions)
+    if not nouvo.adhesionEnCours:
+        ### Compléter les infos éventuellement manquantes.
+        nouvo.mettreAJour(toutesLesAdhesions)
+        ### Téléchargement de la licence ou du CM. Récupération du vieux CM si moins de 3 ans
+        nouvo.telechargerDocuments(chemins)
+        ### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
+        nouvo.formaterPourExport()
+        ### Ajouter à la liste des nouvelles adhésions
+        nvllesAdhesions += (nouvo,)  
+if nvllesAdhesions == []:
+    print(" * ERROR : Il n'y a pas de nouvelle adhésion dans cette notification. Tou·te·s sont déjà adhérent·e·s !")
+    print("           Cette notification a probablement déjà été traitée. Je m'arrête là !")
+    print("           Il y a %i entrée(s) dans cette notification"%len(jsonData['data']['items']))
     sys.exit(-1)
-### Compléter les infos éventuellement manquantes.
-nouvo.mettreAJour(toutesLesAdhesions)
-### Téléchargement de la licence ou du CM. Récupération du vieux CM si moins de 3 ans
-nouvo.telechargerDocuments(chemins)
-### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
-nouvo.formaterPourExport()
 print(now().strftime("%H%M%S")," : ","Vérif ") 
 
 print("**************************************")
@@ -113,6 +115,6 @@ if erreurEnCours == 0:
 print(now().strftime("%H%M%S")," : ","Export ") 
     
 """ Finalisation du travail et écriture dans les fichiers adhoc """
-io.export(nouvo,adhesionsEnCours,chemins)
+io.export(nvllesAdhesions,adhesionsEnCours,chemins)
 print(now().strftime("%H%M%S")," : ","Fin ") 
 

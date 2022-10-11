@@ -264,7 +264,7 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
     chemins['erreurExport'] += erreur
     return chemins
     
-def export(nvlleAdhesion,adhesionsEnCours,chemins):
+def export(nvllesAdhesions,adhesionsEnCours,chemins):
     """ Cette fonction finalise le travail sur une notification HelloAsso :
         - Écriture dans les fichiers
             * {mutations|fichier_import_FSGT|erreurs}.csv
@@ -277,33 +277,34 @@ def export(nvlleAdhesion,adhesionsEnCours,chemins):
     chemins['erreurExport'] = ''
     print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture ODS ") 
     # Écriture dans le fichier ODS des adhésions en cours
-    miseAJourAdhesionsEnCours((nvlleAdhesion,),chemins)
+    miseAJourAdhesionsEnCours(nvllesAdhesions,chemins)
     print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ") 
     # Écriture dans les fichiers FSGT
-    chemins = ecrireFichiersFSGT((nvlleAdhesion,),chemins)
+    chemins = ecrireFichiersFSGT(nvllesAdhesions,chemins)
         
     print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ") 
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
-    if not nvlleAdhesion.ancienAdherent:
-        listesDiffusions(nvlleAdhesion,chemins)
+    listesDiffusions(nvllesAdhesions,chemins)
 
     # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
     # mail récapitulatif des infos de Pic&Col pour les autres 
-    mailAdherent(nvlleAdhesion,chemins)
+    mailAdherent(nvllesAdhesions,chemins)
     
     # Envoyer les logs par mail
-    mailRecapitulatif((nvlleAdhesion,),adhesionsEnCours,chemins)
+    mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)
     print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ") 
 
-def listesDiffusions(nvlleAdhesion,chemins):
-    sm.envoyerEmail(login=chemins['loginContact'],
-                    sujet='Commande sympa',
-                    pour='sympa@listes.picetcol38.fr',
-                    corps='ADD membres '+\
-                        nvlleAdhesion.email+' '+\
-                        nvlleAdhesion.prenom+' '+\
-                        nvlleAdhesion.nom,
-                    bcc='adam@larat.fr')
+def listesDiffusions(nvllesAdhesions,chemins):
+    for nvlleAdhesion in nvllesAdhesions: 
+        if not nvlleAdhesion.ancienAdherent:
+            sm.envoyerEmail(login=chemins['loginContact'],
+                            sujet='Commande sympa',
+                            pour='sympa@listes.picetcol38.fr',
+                            corps='ADD membres '+\
+                                nvlleAdhesion.email+' '+\
+                                nvlleAdhesion.prenom+' '+\
+                                nvlleAdhesion.nom,
+                            bcc='adam@larat.fr')
     return
 
 def nLignes(fichier):
@@ -312,7 +313,7 @@ def nLignes(fichier):
     else: 
         return 0
 
-def mailAdherent(nvlleAdhesion,chemins):
+def mailAdherent(nvllesAdhesions,chemins):
     """ Cette fonction crée un mail informatif adapté à la nouvelle adhésion 
         et l'envoie à l'adhérent·e """
     ### La structure HTML du message est stockée dans chemins['mailAdherent']
@@ -351,42 +352,46 @@ def mailAdherent(nvlleAdhesion,chemins):
     headerPlain  = str(divs["plain-text"].string)
     footer       = "\n\n".join([x.string for x in divs["footer"].findAll('p')])
     text         = headerPlain+fonctionnement+footer
-    ### Gestion du style HTML
-    ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
-    nouvo      = ''
-    readhesion = ''
-    disparaitre= 'display:none;'
-    # Suppression explicite du div plain-text
-    divs['plain-text'].decompose()
-    if nvlleAdhesion.ancienAdherent:
-        nouvo = disparaitre
-        divs['nouvo'].decompose()
-    else:
-        readhesion = disparaitre
-        divs['readhesion'].decompose()
+    for nvlleAdhesion in nvllesAdhesions:
+        ### Gestion du style HTML personalisé
+        ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
+        nouvo      = ''
+        readhesion = ''
+        disparaitre= 'display:none;'
+        # Suppression explicite du div plain-text
+        divs['plain-text'].decompose()
+        if nvlleAdhesion.ancienAdherent:
+            nouvo = disparaitre
+            divs['nouvo'].decompose()
+        else:
+            readhesion = disparaitre
+            divs['readhesion'].decompose()
+            
+        ### Remplacement des variables dans le contenu dans le HTML
+        message = str(soup).replace('PRENOM',nvlleAdhesion.prenom)\
+                           .replace('STYLE_NOUVO',nouvo)\
+                           .replace('STYLE_READHESION',readhesion)\
+                           .replace('FONCTIONNEMENT',markdown(fonctionnement))
+        text    = text.replace('PRENOM',nvlleAdhesion.prenom)
+                           
+        ### Sauvegarde des messages créés
+        bak = open(chemins['dossierLogs']+
+                   "mailAdherent_%s_%s.html"%(nvlleAdhesion.prenom,nvlleAdhesion.nom),
+                   'w')
+        print(message,file=bak)
+        print("--------------------------------------",file=bak)
+        print("--------- PLAIN-TEXT -----------------",file=bak)
+        print("--------------------------------------",file=bak)
+        print(text,file=bak)
+        bak.close()
         
-    ### Remplacement des variables dans le contenu dans le HTML
-    message = str(soup).replace('PRENOM',nvlleAdhesion.prenom)\
-                       .replace('STYLE_NOUVO',nouvo)\
-                       .replace('STYLE_READHESION',readhesion)\
-                       .replace('FONCTIONNEMENT',markdown(fonctionnement))
-    text    = text.replace('PRENOM',nvlleAdhesion.prenom)
-                       
-    ### Sauvegarde des messages créés
-    bak = open(chemins['dossierLogs']+'mailAdherent.html','w')
-    print(message,file=bak)
-    print("--------------------------------------",file=bak)
-    print("--------- PLAIN-TEXT -----------------",file=bak)
-    print("--------------------------------------",file=bak)
-    print(text,file=bak)
-    
-    ### Envoi du mail
-    sm.envoyerEmail(chemins['loginContact'],
-                    sujet = "Bienvenu·e à Pic&Col",
-                    pour  = nvlleAdhesion.email,
-                    corps = text, #en-tête texte plein et Markdown
-                    html  = message,
-                    bcc   = 'adam@larat.fr') # full HTML
+        ### Envoi du mail
+        sm.envoyerEmail(chemins['loginContact'],
+                        sujet = "Bienvenu·e à Pic&Col",
+                        pour  = nvlleAdhesion.email,
+                        corps = text, #en-tête texte plein et Markdown
+                        html  = message,
+                        bcc   = 'adam@larat.fr') # full HTML
     
 def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
     # Constitution du message de log et pour le mail 
@@ -669,5 +674,43 @@ if __name__ == '__main__':
         'erreurExport'           : '',
         'dossierLogs'            : 'Logs/'
     }
-    mailAdherent(moi, chemins)
+    #mailAdherent(moi, chemins)
+    #listesDiffusions(moi, chemins)
+    
+    # sm.envoyerEmail(login=chemins['loginContact'],
+    #                 sujet='Commande sympa',
+    #                 pour= 'sympa@listes.picetcol38.fr', #'8zvrcefhdrgfe@emailchecky.com', #'sympa@listes.picetcol38.fr', #
+    #                 corps='ADD membres'+\
+    #                     moi.email+' '+\
+    #                     moi.prenom+' '+\
+    #                     moi.nom,
+    #                 bcc='adam@larat.fr')
+    
+    import smtplib, ssl
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    login = chemins['loginContact']
+    port = login.port
+    smtp_server = login.serveur_smtp
+    password    = login.password
+    adresse = sender_email = login.adresse
+    pour = receiver_email = "sympa@listes.picetcol38.fr"
+    bcc = "adam@larat.fr"
+    
+    email = MIMEMultipart()
+    email["Subject"] = "Commande Sympa"
+    email["From"]    = adresse
+    email["To"]      = pour
+    email["Bcc"]     = bcc
+    message = """ADD membres adam.larat@gmail.com Adam Larat"""
+    email.attach(MIMEText(message,"plain","utf-8"))
+    
+    context = ssl.create_default_context()
+    with smtplib.SMTP(smtp_server, port) as server:
+        server.ehlo()  # Can be omitted
+        server.starttls(context=context)
+        server.ehlo()  # Can be omitted
+        server.login(sender_email, password)
+        server.sendmail(sender_email, (receiver_email,"adam@larat.fr"), message)
+
     

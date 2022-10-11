@@ -28,7 +28,7 @@
             /* Récupération des informations de la notifications */
             $prenom = ucfirst(supprimerCaracteresSpeciaux($data->items[0]->user->firstName));
             $nom    = strtoupper(supprimerCaracteresSpeciaux($data->items[0]->user->lastName));
-            $event  = "Membership";
+            $event  = (count($data->items)==1)?"Membership":count($data->items)."Memberships";
             $logsName = $date."_".$prenom."_".$nom."_".$event;
     
             /* Création du dossier de logs et backup */
