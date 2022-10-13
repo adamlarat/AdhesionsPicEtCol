@@ -387,7 +387,7 @@ def mailAdherent(nvllesAdhesions,chemins):
         
         ### Envoi du mail
         sm.envoyerEmail(chemins['loginContact'],
-                        sujet = "Bienvenu·e à Pic&Col",
+                        sujet = "Bienvenue à Pic&Col",
                         pour  = nvlleAdhesion.email,
                         corps = text, #en-tête texte plein et Markdown
                         html  = message,
@@ -674,16 +674,16 @@ if __name__ == '__main__':
         'erreurExport'           : '',
         'dossierLogs'            : 'Logs/'
     }
-    # mailAdherent((moi,), chemins)
+    mailAdherent((moi,), chemins)
     # listesDiffusions((moi,), chemins)
     
-    sm.envoyerEmail(login=chemins['loginContact'],
-                    sujet='Commande sympa',
-                    pour= 'sympa@listes.picetcol38.fr', #'8zvrcefhdrgfe@emailchecky.com', #'sympa@listes.picetcol38.fr', #
-                    corps='ADD membres'+\
-                        moi.email+' '+\
-                        moi.prenom+' '+\
-                        moi.nom,
-                    bcc='adam@larat.fr')
+    # sm.envoyerEmail(login=chemins['loginContact'],
+    #                 sujet='Commande sympa',
+    #                 pour= 'sympa@listes.picetcol38.fr', #'8zvrcefhdrgfe@emailchecky.com', #'sympa@listes.picetcol38.fr', #
+    #                 corps='ADD membres'+\
+    #                     moi.email+' '+\
+    #                     moi.prenom+' '+\
+    #                     moi.nom,
+    #                 bcc='adam@larat.fr')
 
     

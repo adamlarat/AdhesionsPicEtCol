@@ -8,7 +8,7 @@ Created on Wed Apr 13 17:44:54 2022
 import smtplib, ssl,os
 from email.message import EmailMessage
 from email.utils import make_msgid
-import mimetypes
+import mimetypes,certifi
 
 
 def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
@@ -41,7 +41,7 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
                                  filename = filename)
         
     email['message-id'] = make_msgid(domain=adresse.split('@')[1])
-    context = ssl.create_default_context()
+    context = ssl.create_default_context(cafile=certifi.where())
     with smtplib.SMTP(serveurSMTP, port) as serveur:
         serveur.starttls(context=context)
         serveur.login(adresse,password)
