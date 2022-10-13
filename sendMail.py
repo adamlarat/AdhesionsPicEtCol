@@ -5,12 +5,10 @@ Created on Wed Apr 13 17:44:54 2022
 
 @author: larat
 """
-import smtplib, ssl, os
-from email import encoders
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import smtplib, ssl,os
+from email.message import EmailMessage
 from email.utils import make_msgid
+import mimetypes
 
 
 def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
@@ -19,53 +17,35 @@ def envoyerEmail(login,sujet,pour,corps,cc="",bcc="",html="",pjointes=[]):
     adresse     = login.adresse
     password    = login.password
     
-    if pjointes == [] :
-        email = MIMEMultipart("alternative")
-    else:
-        email = MIMEMultipart()
+    email = EmailMessage()
     email["Subject"] = sujet
     email["From"]    = adresse
     email["To"]      = pour
     email["Cc"]      = cc
     email["Bcc"]     = bcc
-    email['message-id'] = make_msgid(domain=adresse.split('@')[1])
-    destinataires = (pour,) if (type(pour) == str) else pour
-    if cc != '':
-        destinataires += (cc,) if (type(cc) == str) else cc
-    if bcc != '': 
-        destinataires += (bcc,) if (type(bcc) == str) else bcc
     
-    if pjointes == []:
-        email.attach(MIMEText(corps,"plain"))
-        if html != "": 
-            email.attach(MIMEText(html,"html"))
-    else:
-        if html != "":
-            email.attach(MIMEText(html,"html"))
-        else:
-            email.attach(MIMEText(corps,"plain"))
-        
+    email.set_content(corps)
+    if not html == "":
+        email.add_alternative(html, subtype='html')
+            
     for pjointe in pjointes: # Attacher des pièces jointes
-        part = MIMEBase("application", "octet-stream")
+        filename        = os.path.split(pjointe)[1]
+        ctype, encoding = mimetypes.guess_type(pjointe)
+        if ctype is None or encoding is not None:
+            ctype = 'application/octet-stream'
+        maintype, subtype = ctype.split('/', 1)
         with open(pjointe, "rb") as attachment:
-            # Add file as application/octet-stream
-            # Email client can usually download this automatically as attachment
-            part.set_payload(attachment.read())
-        # Encode file in ASCII characters to send by email    
-        encoders.encode_base64(part)
-        # Add header as key/value pair to attachment part
-        part.add_header(
-            "Content-Disposition",
-            f"attachment; filename= {os.path.split(pjointe)[1]}",
-        )
-        # Add attachment to message and convert message to string
-        email.attach(part)
+            email.add_attachment(attachment.read(), 
+                                 maintype = maintype, 
+                                 subtype  = subtype, 
+                                 filename = filename)
         
+    email['message-id'] = make_msgid(domain=adresse.split('@')[1])
     context = ssl.create_default_context()
     with smtplib.SMTP(serveurSMTP, port) as serveur:
         serveur.starttls(context=context)
         serveur.login(adresse,password)
-        serveur.sendmail(adresse,destinataires,email.as_string())
+        serveur.send_message(email)
         
 def mask(chain,debut,fin):
     long = len(chain)

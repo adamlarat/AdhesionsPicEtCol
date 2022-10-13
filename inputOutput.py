@@ -665,8 +665,8 @@ def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
 if __name__ == '__main__':
     from Adherent import Adherent
     moi = Adherent(nom='Larat',prenom='Adam',dateNaissance='01/01/1980',afficherErreur=False)
-    moi.email = 'adam.larat@gmail.com' 
-    moi.ancienAdherent = True
+    moi.email = 'adam@larat.fr' #'adam.larat@gmail.com' 
+    moi.ancienAdherent = False
     chemins = {
         'mailAdherent'           : 'CoffreFort/mailAdherent.html',
         'fonctionnementPicEtCol' : 'CoffreFort/fonctionnementPicEtCol.md',
@@ -674,43 +674,16 @@ if __name__ == '__main__':
         'erreurExport'           : '',
         'dossierLogs'            : 'Logs/'
     }
-    #mailAdherent(moi, chemins)
-    #listesDiffusions(moi, chemins)
+    # mailAdherent((moi,), chemins)
+    # listesDiffusions((moi,), chemins)
     
-    # sm.envoyerEmail(login=chemins['loginContact'],
-    #                 sujet='Commande sympa',
-    #                 pour= 'sympa@listes.picetcol38.fr', #'8zvrcefhdrgfe@emailchecky.com', #'sympa@listes.picetcol38.fr', #
-    #                 corps='ADD membres'+\
-    #                     moi.email+' '+\
-    #                     moi.prenom+' '+\
-    #                     moi.nom,
-    #                 bcc='adam@larat.fr')
-    
-    import smtplib, ssl
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    login = chemins['loginContact']
-    port = login.port
-    smtp_server = login.serveur_smtp
-    password    = login.password
-    adresse = sender_email = login.adresse
-    pour = receiver_email = "sympa@listes.picetcol38.fr"
-    bcc = "adam@larat.fr"
-    
-    email = MIMEMultipart()
-    email["Subject"] = "Commande Sympa"
-    email["From"]    = adresse
-    email["To"]      = pour
-    email["Bcc"]     = bcc
-    message = """ADD membres adam.larat@gmail.com Adam Larat"""
-    email.attach(MIMEText(message,"plain","utf-8"))
-    
-    context = ssl.create_default_context()
-    with smtplib.SMTP(smtp_server, port) as server:
-        server.ehlo()  # Can be omitted
-        server.starttls(context=context)
-        server.ehlo()  # Can be omitted
-        server.login(sender_email, password)
-        server.sendmail(sender_email, (receiver_email,"adam@larat.fr"), message)
+    sm.envoyerEmail(login=chemins['loginContact'],
+                    sujet='Commande sympa',
+                    pour= 'sympa@listes.picetcol38.fr', #'8zvrcefhdrgfe@emailchecky.com', #'sympa@listes.picetcol38.fr', #
+                    corps='ADD membres'+\
+                        moi.email+' '+\
+                        moi.prenom+' '+\
+                        moi.nom,
+                    bcc='adam@larat.fr')
 
     
