@@ -296,15 +296,17 @@ def export(nvllesAdhesions,adhesionsEnCours,chemins):
 
 def listesDiffusions(nvllesAdhesions,chemins):
     for nvlleAdhesion in nvllesAdhesions: 
-        if not nvlleAdhesion.ancienAdherent:
-            sm.envoyerEmail(login=chemins['loginContact'],
-                            sujet='Commande sympa',
-                            pour='sympa@listes.picetcol38.fr',
-                            corps='ADD membres '+\
-                                nvlleAdhesion.email+' '+\
-                                nvlleAdhesion.prenom+' '+\
-                                nvlleAdhesion.nom,
-                            bcc='adam@larat.fr')
+        ### Modif le 2022.10.20. Faut faire la requête pour tt le monde
+        ### À cause du nettoyage d'automne
+        #if not nvlleAdhesion.ancienAdherent:
+        sm.envoyerEmail(login=chemins['loginContact'],
+                        sujet='Commande sympa',
+                        pour='sympa@listes.picetcol38.fr',
+                        corps='ADD membres '+\
+                            nvlleAdhesion.email+' '+\
+                            nvlleAdhesion.prenom+' '+\
+                            nvlleAdhesion.nom,
+                        bcc='adam@larat.fr')
     return
 
 def nLignes(fichier):
