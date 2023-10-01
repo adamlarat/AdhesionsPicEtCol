@@ -116,7 +116,7 @@ jsonToObject = {
     'assurage'        : '',
     'contactUrgence'  : "custom/Téléphone d'un contact",
     ### -------- Fin tableau exporté. Purs attributs de la classe Adhérents ------------------
-    'lienCertif'      : "custom/Certificat médical",
+    'lienCertif'      : "custom/Si tu as répondu",
     'lienLicence'     : "custom/Copie de la licence",
     'clubLicence'     : "custom/Club FSGT"
 }

@@ -40,7 +40,7 @@ def recupDonneesHelloAsso(chemins):
     debut  = chemins['parametresRobot'].derniere_releve
     fin    = mf.today()
 
-    apiCall = "/v5/organizations/pic-col/forms/Membership/adhesionsaison-"+saison+\
+    apiCall = "/v5/organizations/pic-col/forms/Membership/adhesionsaison"+saison+\
         "/items?from="+mf.apiDate(debut)+"&to="+mf.apiDate(fin)+\
         "&pageSize=100&itemStates=Processed&withDetails=true&sortOrder=Desc&sortField=Date"
     print(apiCall)
