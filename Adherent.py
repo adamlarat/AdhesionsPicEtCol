@@ -25,6 +25,11 @@ On crée ici un dictionnaire qui relie les noms des attributs de la classe Adher
 aux titres des colonnes stockées dans le fichiers d'adhérents Pic&Col (et par la FSGT)
 dans l'ordre.
 """
+importFSGT_elicence = [
+  'numLicence', 'nom', 'prenom', 'genre', 'dateNaissance', 'email',
+  'telephone', 'assurance', 'dateCertif', 'adresse', 'codePostal',
+  'ville', 'assurance', 'champ4', 'champ4',  'champ4', 'champ4', 
+  'champ4', 'champ4',  'champ4', 'champ4', 'champ4']  
 titreFSGT = {
     ### 'attribut'    : 'ENTETE_COLONNE',
     'dateInscription' : 'DATE_INSCRIPTION',
@@ -583,6 +588,8 @@ class Adherent:
             for attribut in list(titreFSGT)[2:24]:
                 chaine += self.exportAttribut(attribut)+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
+        elif form == 'elicence':
+            chaine = ';'.join([getattr(self,attr) for attr in importFSGT_elicence])
         elif form == 'HTML':
             chaine += "<ul>\n"
             for item in exportWeb:

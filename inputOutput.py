@@ -259,7 +259,8 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
             except:
                 erreur += " * Erreur : échec à l'ouverture de "+chemins['fichierImport']+"\n"
         if fichier:
-            print(nvlleAdhesion.toString("FSGT"), file=fichier)
+            #print(nvlleAdhesion.toString("FSGT"), file=fichier)
+            print(nvlleAdhesion.toString("elicence"), file=fichier)
             fichier.close()
     chemins['erreurExport'] += erreur
     return chemins
