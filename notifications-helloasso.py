@@ -12,7 +12,7 @@ import numpy as np
 from Adherent import Adherent
 from datetime.datetime import now
 
-print(now().strftime("%H%M%S")," : ","Début…") 
+print(now().strftime("%H%M%S")," : ","Début…")
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir la notification sous forme de fichier JSON !")
@@ -29,8 +29,8 @@ else:
         print("Le fichier Json n'est pas correctement lisible !")
         print("Abandon !")
         sys.exit(-1)
-        
-print(now().strftime("%H%M%S")," : ","Chemins") 
+
+print(now().strftime("%H%M%S")," : ","Chemins")
 
 saison           = mf.saison()
 dossierLogs      = os.path.split(sys.argv[1])[0]+'/'
@@ -50,19 +50,18 @@ chemins = {
     'dossierAdhesions'       : dossierAdhesions,
     'adhesionsEnCoursODS'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".ods",
     'adhesionsEnCoursCSV'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".csv",
-    'dossierCM'              : dossierAdhesions+'CertificatsMedicaux/',
     'dossierATraiter'        : dossierATraiter,
-    'Telechargements'        : dossierAdhesions+'CertificatsMedicaux/'
+    # 'Telechargements'        : dossierAdhesions+'CertificatsMedicaux/'
+    'Telechargements'        : dossierAdhesions+'Telechargement_'+saison,
 }
-io.verifierDossier(chemins['dossierCM'])
 io.verifierDossier(chemins['dossierATraiter'])
 io.verifierDossier(chemins['Telechargements'])
 
-print(now().strftime("%H%M%S")," : ","Charge adhésions") 
+print(now().strftime("%H%M%S")," : ","Charge adhésions")
 ### Charger toutes les précédentes saisons en mémoire
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
-print(now().strftime("%H%M%S")," : ","Traitement") 
+print(now().strftime("%H%M%S")," : ","Traitement")
 print("*******************************************")
 print("Traitement de(s) nouvelle(s) adhésion(s)...")
 print("*******************************************")
@@ -85,13 +84,13 @@ for entree in jsonData['data']['items']:
         ### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
         nouvo.formaterPourExport()
         ### Ajouter à la liste des nouvelles adhésions
-        nvllesAdhesions += (nouvo,)  
+        nvllesAdhesions += (nouvo,)
 if nvllesAdhesions == []:
     print(" * ERROR : Il n'y a pas de nouvelle adhésion dans cette notification. Tou·te·s sont déjà adhérent·e·s !")
     print("           Cette notification a probablement déjà été traitée. Je m'arrête là !")
     print("           Il y a %i entrée(s) dans cette notification"%len(jsonData['data']['items']))
     sys.exit(-1)
-print(now().strftime("%H%M%S")," : ","Vérif ") 
+print(now().strftime("%H%M%S")," : ","Vérif ")
 
 print("**************************************")
 print("Vérification des adhésions en cours...")
@@ -104,7 +103,7 @@ adhesionsEnCours = []
 erreurEnCours = 0
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
-    erreur = adherent.verifierAdhesionEnCours(chemins['dossierCM'])
+    erreur = adherent.verifierAdhesionEnCours()
     if erreur > 0:
         print(adherent.messageErreur)
     adhesionsEnCours += (adherent,)
@@ -112,9 +111,8 @@ for i in range(1,Nb_enCours+1):
 if erreurEnCours == 0:
     print("  Toutes les adhésions en cours sont nickels !")
 
-print(now().strftime("%H%M%S")," : ","Export ") 
-    
+print(now().strftime("%H%M%S")," : ","Export ")
+
 """ Finalisation du travail et écriture dans les fichiers adhoc """
 io.export(nvllesAdhesions,adhesionsEnCours,chemins)
-print(now().strftime("%H%M%S")," : ","Fin ") 
-
+print(now().strftime("%H%M%S")," : ","Fin ")

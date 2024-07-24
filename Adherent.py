@@ -63,7 +63,12 @@ titreFSGT = {
     'tarif'           : 'TARIF',
     'statut'          : 'STATUT',
     'assurage'        : 'ASSURAGE',
-    'contactUrgence'  : 'URGENCE'
+    'contactUrgence'  : 'URGENCE',
+    'initiations'     : "INITIATIONS",
+    'animation_enfants' : "ANIMATION_ENFANTS",
+    'getion_matos'    : "GETION_MATOS",
+    'mail_rando'      : "MAIL_RANDO",
+    'mail_ski'        : "MAIL_SKI",
 }
 exportWeb = {
     "Date d'inscription" : 'dateInscription',
@@ -120,6 +125,11 @@ jsonToObject = {
     'statut'          : "custom/Statut de l'inscription",
     'assurage'        : '',
     'contactUrgence'  : "custom/Téléphone d'un contact",
+    'initiations'  : "custom/Je participerai aux initiations",
+    'animation_enfants'  : "custom/Je participerai à l'animation du créneau Enfants",
+    'getion_matos'  : "custom/Je participerai à la gestion du prêt de matériel",
+    'mail_rando'  : "custom/Je m'inscris à la mailing list Randonnées",
+    'mail_ski'  : "custom/Je m'inscris à la mailing list Sorties à ski",
     ### -------- Fin tableau exporté. Purs attributs de la classe Adhérents ------------------
     'lienCertif'      : "custom/Si tu as répondu",
     'lienLicence'     : "custom/Copie de la licence",
@@ -140,7 +150,7 @@ class Adherent:
                 if 'date' in attribut:
                     setattr(self,attribut,mf.verifierDate(valeur))
                 else:
-                    setattr(self,attribut,valeur)
+                    setattr(self, attribut, valeur)
             """ Autres données récupérées depuis HelloAsso """
             self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE')
             self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
@@ -156,9 +166,9 @@ class Adherent:
                 if type(valeur) == str:
                     valeur = valeur.strip()
                 if 'date' in attribut:
-                    setattr(self,attribut,mf.verifierDate(valeur))
+                    setattr(self, attribut, mf.verifierDate(valeur))
                 else:
-                    setattr(self,attribut,valeur)
+                    setattr(self, attribut, valeur)
             """ Formater les données """
             ### l'API HelloAsso envoie les tarifs en centimes
             self.tarif = self.tarif//100

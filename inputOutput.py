@@ -71,7 +71,7 @@ def formaterTable(adhesions):
         for col in range(nCols):
             adhesions[line,col] = adhesions[line,col].replace('"','').strip()
             delete = (delete and adhesions[line,col] == "")
-        if delete: 
+        if delete:
             supprLignes += line,
     # Supprimer les lignes qui ne contiennent que des caractères vides
     if len(supprLignes)>0:
@@ -82,8 +82,8 @@ def formaterTable(adhesions):
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
 # def remplacerTitresColonnes(adhesions):
-#     """ Cette fonction permet de normaliser les titres des colonnes. 
-#         La table suivante donne les correspondance entre ce qui sort 
+#     """ Cette fonction permet de normaliser les titres des colonnes.
+#         La table suivante donne les correspondance entre ce qui sort
 #         de HelloAsso et le format Pic&Col qui inclus le format FSGT."""
 #     pattern_matching = np.array(
 #         [
@@ -134,10 +134,10 @@ def formaterTable(adhesions):
 #     return adhesions
 
 
-def chargerToutesLesAdhesions(chemins):
+def chargerToutesLesAdhesions(chemins: dict) -> list:
     """ Cette fonction parcours tous les dossiers présents dans 'dossierAdhesions'
         par ordre décroissant des saisons (2021-2022, puis 2020-2021, etc...)
-        Tant qu'un fichier AdhesionsPicEtCol_${saison}.csv est trouvé, il est 
+        Tant qu'un fichier AdhesionsPicEtCol_${saison}.csv est trouvé, il est
         chargé en mémoire dans un tableau numpy.
         Cette fonction renvoie alors une liste de dictionnaires pour chaque saison."""
     fichierAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
@@ -149,20 +149,24 @@ def chargerToutesLesAdhesions(chemins):
         if len(np.shape(adhesions_np)) == 1:
             adhesions_np = adhesions_np[np.newaxis,:]
         adhesions_np = formaterTable(adhesions_np)
-        noms         = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
+        noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
                                     for nom in mf.getCol(adhesions_np,'NOM')])
-        prenoms      = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
+        prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
                                     for prenom in mf.getCol(adhesions_np,'PRENOM')])
-        ddn          = np.array([dob.replace('"','').strip()
-                                    for dob in mf.getCol(adhesions_np,'NAISS')])
+        ddn = np.array([
+            dob.replace('"','').strip()
+            for dob in mf.getCol(adhesions_np,'NAISS')
+        ])
         # Enregistrer les adhésions dans une structure adhoc
-        toutesLesAdhesions += {'saison':saison,
-                               'noms':noms,
-                               'prenoms':prenoms,
-                               'ddn':ddn,
-                               'tableau':adhesions_np,
-                               'fichier':fichierAdhesionsCourantes,
-                               'dossierCM':chemins['dossierCM'].replace(saison0,saison)},
+        toutesLesAdhesions += {
+            'saison':saison,
+            'noms':noms,
+            'prenoms':prenoms,
+            'ddn':ddn,
+            'tableau':adhesions_np,
+            'fichier':fichierAdhesionsCourantes,
+            'dossierCM':chemins['dossierCM'].replace(saison0,saison)
+        },
         # Reculer d'une saison
         annee       = int(saison.split("-")[0])-1
         nvlleSaison = str(annee)+"-"+str(annee+1)
@@ -190,25 +194,25 @@ def miseAJourAdhesionsEnCours(adherents,chemins):
         doc.save()
     except:
         erreur+=" * ERREUR : impossible d'enregistrer le document "+adhesionsEnCours+'\n'
-    try:    
+    try:
         doc.close()
     except:
         erreur+=" * ERREUR : le document "+adhesionsEnCours+" ne s'est pas fermé correctement\n"
-        
+
     os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
     chemins['erreurExport'] += erreur
 
 def fichierImportBaseLicence(chemins):
     """ Retourne le nom du fichier d'import pour le serveur de licence FSGT.
         Si ce dernier n'existe pas dans chemins['dossierATraiter'], cette fonction
-        le crée en : 
+        le crée en :
             - rajoutant 1 au dernier numéro de lot présent dans chemins['dossierAdhesions'];
             - initialisant le numéro de lot à 01 si aucun fichier d'import n'est présent dans ce dossier.
     """
     erreur = ''
-    fichiers = glob.glob(chemins['dossierATraiter']+'fichier_import_base_licence_*.csv') 
+    fichiers = glob.glob(chemins['dossierATraiter']+'fichier_import_base_licence_*.csv')
     lot = 0
-    if len(fichiers) == 1: 
+    if len(fichiers) == 1:
         filename = fichiers[0].split('/')[-1]
     elif len(fichiers) == 0:
         fichiers = glob.glob(chemins['dossierAdhesions']+'fichier_import_base_licence_*.csv')
@@ -232,7 +236,7 @@ def fichierImportBaseLicence(chemins):
     chemins['fichierImport'] = chemins['dossierATraiter']+filename
     chemins['erreurExport'] += erreur
     return chemins
-                
+
 def ecrireFichiersFSGT(nvllesAdhesions,chemins):
     """ Exporte les données des nouvelleaux adhérent·e·s dans
         - 'erreurs.csv' si il y a eu une erreur pendant le traitement
@@ -264,7 +268,7 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
             fichier.close()
     chemins['erreurExport'] += erreur
     return chemins
-    
+
 def export(nvllesAdhesions,adhesionsEnCours,chemins):
     """ Cette fonction finalise le travail sur une notification HelloAsso :
         - Écriture dans les fichiers
@@ -276,27 +280,27 @@ def export(nvllesAdhesions,adhesionsEnCours,chemins):
     """
     # chaîne de caractères pour récupérer les erreurs lors de l'export
     chemins['erreurExport'] = ''
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture ODS ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture ODS ")
     # Écriture dans le fichier ODS des adhésions en cours
     miseAJourAdhesionsEnCours(nvllesAdhesions,chemins)
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ")
     # Écriture dans les fichiers FSGT
     chemins = ecrireFichiersFSGT(nvllesAdhesions,chemins)
-        
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ") 
+
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ")
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
     listesDiffusions(nvllesAdhesions,chemins)
 
     # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
-    # mail récapitulatif des infos de Pic&Col pour les autres 
+    # mail récapitulatif des infos de Pic&Col pour les autres
     mailAdherent(nvllesAdhesions,chemins)
-    
+
     # Envoyer les logs par mail
     mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ") 
+    print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
 
 def listesDiffusions(nvllesAdhesions,chemins):
-    for nvlleAdhesion in nvllesAdhesions: 
+    for nvlleAdhesion in nvllesAdhesions:
         ### Modif le 2022.10.20. Faut faire la requête pour tt le monde
         ### À cause du nettoyage d'automne
         #if not nvlleAdhesion.ancienAdherent:
@@ -313,11 +317,11 @@ def listesDiffusions(nvllesAdhesions,chemins):
 def nLignes(fichier):
     if os.path.exists(fichier):
         return len(open(fichier,'r').readlines())
-    else: 
+    else:
         return 0
 
 def mailAdherent(nvllesAdhesions,chemins):
-    """ Cette fonction crée un mail informatif adapté à la nouvelle adhésion 
+    """ Cette fonction crée un mail informatif adapté à la nouvelle adhésion
         et l'envoie à l'adhérent·e """
     ### La structure HTML du message est stockée dans chemins['mailAdherent']
     erreur  = ''
@@ -345,19 +349,19 @@ def mailAdherent(nvllesAdhesions,chemins):
     except:
         erreur += " * ERREUR : le fichier "+chemins['fonctionnementPicEtCol']+" ne s'est pas ouvert correctement\n"
         erreur += "            Envoyer le mail à la main ou relancer la procédure !\n"
-        return     
-    ### Pour qu'une liste soit reconnue comme telle par Markdown, 
+        return
+    ### Pour qu'une liste soit reconnue comme telle par Markdown,
     ### il faut qu'elle soit précédée d'une ligne blanche
     ### Cette régex fait le travail...
     fonctionnement = re.sub(r'\n([^\n]*)\n\*',r'\n\1\n\n*',fonctionnement)+'\n'
-    
+
     ### Version Plain-text
     headerPlain  = str(divs["plain-text"].string)
     footer       = "\n\n".join([x.string for x in divs["footer"].findAll('p')])
     text         = headerPlain+fonctionnement+footer
     for nvlleAdhesion in nvllesAdhesions:
         ### Gestion du style HTML personalisé
-        ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître. 
+        ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître.
         nouvo      = ''
         readhesion = ''
         disparaitre= 'display:none;'
@@ -369,14 +373,14 @@ def mailAdherent(nvllesAdhesions,chemins):
         else:
             readhesion = disparaitre
             divs['readhesion'].decompose()
-            
+
         ### Remplacement des variables dans le contenu dans le HTML
         message = str(soup).replace('PRENOM',nvlleAdhesion.prenom)\
                            .replace('STYLE_NOUVO',nouvo)\
                            .replace('STYLE_READHESION',readhesion)\
                            .replace('FONCTIONNEMENT',markdown(fonctionnement))
         text    = text.replace('PRENOM',nvlleAdhesion.prenom)
-                           
+
         ### Sauvegarde des messages créés
         bak = open(chemins['dossierLogs']+
                    "mailAdherent_%s_%s.html"%(nvlleAdhesion.prenom,nvlleAdhesion.nom),
@@ -387,7 +391,7 @@ def mailAdherent(nvllesAdhesions,chemins):
         print("--------------------------------------",file=bak)
         print(text,file=bak)
         bak.close()
-        
+
         ### Envoi du mail
         sm.envoyerEmail(chemins['loginContact'],
                         sujet = "Bienvenue à Pic&Col",
@@ -395,19 +399,19 @@ def mailAdherent(nvllesAdhesions,chemins):
                         corps = text, #en-tête texte plein et Markdown
                         html  = message,
                         bcc   = 'adam@larat.fr') # full HTML
-    
+
 def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
-    # Constitution du message de log et pour le mail 
+    # Constitution du message de log et pour le mail
     message = ""
     message+= "*******************\n"
     if len(nvllesAdhesions) == 1:
         message+= "Nouvelle adhésion\n"
     else:
-        message+= "Nouvelles adhésions\n"        
+        message+= "Nouvelles adhésions\n"
     message+= "*******************\n"
     for adherent in nvllesAdhesions:
         message += adherent.messageErreur
-        
+
     message+= "***********************************\n"
     message+= "Vérification des adhésions en cours\n"
     message+= "***********************************\n"
@@ -416,9 +420,9 @@ def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
         if adherent.erreur > 0 :
             message += adherent.messageErreur
             err     += 1
-    if err == 0: 
+    if err == 0:
         message += "  Toutes les adhésions en cours sont nickels !\n"
-        
+
     message += "---------- RÉSUMÉ DES ADHÉSIONS ------------------\n"
     message += "Nombre d'adhésion en cours vérifiées  : %03i\n"%len(adhesionsEnCours)
     message += "Nombre d'erreurs à traiter parmi les adhésions en cours : %03i\n"%err
@@ -433,8 +437,8 @@ def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
     message += "Nombre total d'adhérent·e·s à Pic&Col : %03i\n"%(len(nvllesAdhesions)+len(adhesionsEnCours))
     ### Rajouter ici une procédure pour obtenir le nombre d'adhésions sur le HelloAsso
     message += "--------------------------------------------------\n"
-        
-        
+
+
     nCertifs,nLicences = compteDocuments(chemins['dossierCM'])
     message += "----------- DOCUMENTS TROUVÉS --------------------\n"
     message += "Dossier  = "+chemins['dossierCM']+"\n"
@@ -442,7 +446,7 @@ def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
     message += "Licences = %03i\n"%nLicences
     message += "--------------------------------------------------\n"
     message += "\n"
-    
+
     baseDeDonneesODS = chemins['adhesionsEnCoursODS']
     importFSGT       = chemins['fichierImport']
     mutations        = chemins['mutations.csv']
@@ -499,7 +503,7 @@ def emptyDir(dirname):
     if os.path.exists(dirname):
         shutil.rmtree(dirname)
     os.mkdir(dirname)
-    
+
 def verifierDossier(dirname):
     """ Si le dossier n'existe pas, le créer ! """
     if not os.path.exists(dirname):
@@ -571,14 +575,14 @@ def ecrireFichiersFSGT_old(adherents,exportDict):
 """ 2022.09.21 : Procédure appelée par adhesionPicEtCol.py
     Amenée à disparaître """
 def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
-    # Constitution du message de log et pour le mail 
+    # Constitution du message de log et pour le mail
     message = ""
     message+= "*******************\n"
     message+= "Nouvelles adhésions\n"
     message+= "*******************\n"
     for adherent in nvllesAdhesions:
         message += adherent.messageErreur
-    
+
     message += "----------------- RÉSUMÉ -------------------------\n"
     message += "Nombre total d'adhérent·e·s chargées : %03i\n"%compteurs['helloAsso']
     message += "Nombre de nouvelles adhésions        : %03i\n"%len(nvllesAdhesions)
@@ -600,7 +604,7 @@ def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
     message += "Licences = %03i\n"%nLicences
     message += "--------------------------------------------------\n"
     message += "\n"
-    
+
     message+= "***********************************\n"
     message+= "Vérification des adhésions en cours\n"
     message+= "***********************************\n"
@@ -621,7 +625,7 @@ def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
     message += "Nombre total d'adhérent·e·s à Pic&Col : %03i\n"%(len(nvllesAdhesions)+len(dejaAdherents))
     message += "--------------------------------------------------\n"
     message += "\n"
-    
+
     baseDeDonneesODS = chemins['adhesionsEnCoursODS']
     importFSGT       = chemins['dossierLogs']+exportDict['RNV'][1]
     mutations        = chemins['dossierLogs']+exportDict['MUT'][1]
@@ -657,7 +661,7 @@ def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
     print(" Résumé ")
     print("******************************")
     print(message)
-    
+
     # L'envoie à la liste des emails concernés
     for adresse in open(chemins['listeEmails']):
         sm.envoyerEmail(chemins['loginContact'],
@@ -668,7 +672,7 @@ def logsEtMails_old(nvllesAdhesions,dejaAdherents,chemins,exportDict,compteurs):
 if __name__ == '__main__':
     from Adherent import Adherent
     moi = Adherent(nom='Larat',prenom='Adam',dateNaissance='01/01/1980',afficherErreur=False)
-    moi.email = 'adam@larat.fr' #'adam.larat@gmail.com' 
+    moi.email = 'adam@larat.fr' #'adam.larat@gmail.com'
     moi.ancienAdherent = False
     chemins = {
         'mailAdherent'           : 'CoffreFort/mailAdherent.html',
@@ -679,7 +683,7 @@ if __name__ == '__main__':
     }
     mailAdherent((moi,), chemins)
     # listesDiffusions((moi,), chemins)
-    
+
     # sm.envoyerEmail(login=chemins['loginContact'],
     #                 sujet='Commande sympa',
     #                 pour= 'sympa@listes.picetcol38.fr', #'8zvrcefhdrgfe@emailchecky.com', #'sympa@listes.picetcol38.fr', #
@@ -688,5 +692,3 @@ if __name__ == '__main__':
     #                     moi.prenom+' '+\
     #                     moi.nom,
     #                 bcc='adam@larat.fr')
-
-    
