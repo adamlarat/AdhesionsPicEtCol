@@ -26,17 +26,17 @@
                   'w','Y','y','Y','Z','z','Z','z','Z','z','s','f','O','o','U','u','A','a','I','i',
                   'O','o','U','u','U','u','U','u','U','u','U','u','A','a','AE','ae','O','o');
     return str_replace($accents,$sans,$chaine);
-  } 
-  
+  }
+
   function supprimerCaracteresSpeciaux($chaine){
     $chaine = preg_replace('/[^a-zA-Z0-9]/s','',enleve_accents($chaine));
     return strtolower($chaine);
   }
-  
+
   function saison(){
     $annee = (int) date("Y");
     $mois  = (int) date("m");
-    if ($mois < 9)
+    if ($mois < 7)
     {
       $saison = strval($annee-1)."-".$annee;
     }

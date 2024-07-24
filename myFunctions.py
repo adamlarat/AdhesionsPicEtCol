@@ -39,15 +39,15 @@ def fromJson(json,titre):
             for champ in json['customFields']:
                 if chemin[1] in champ['name']:
                     return champ['answer']
-    else: 
+    else:
         entree = json
-        for c in chemin: 
+        for c in chemin:
             if c in entree.keys():
                 entree = entree[c]
-            else : 
+            else :
                 return ''
         return entree
-    return '' 
+    return ''
 
 def getCol(adhesions,titre):
     res = adhesions[:,(adhesions[0]==titre)]
@@ -140,7 +140,7 @@ def format_tel(tel):
             form_tel+=i
     return form_tel[:-1]
 
-def verifierDate(date_str,errorOut=True):
+def verifierDate(date_str, errorOut=True):
     """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
     if date_str == '' or date_str == 'EXT':
         return date_str
@@ -150,14 +150,14 @@ def verifierDate(date_str,errorOut=True):
         try:
             myDate = datetime.strptime(date_str,'%d/%m/%Y')
         except:
-            if errorOut: 
+            if errorOut:
                 print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
             return ''
     elif len(liste) == 2:
         try:
             myDate = datetime.strptime(date_str,'%d/%m/%Y %H:%M:%S')
         except:
-            if errorOut: 
+            if errorOut:
                 print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
             return ''
     elif len(liste) == 3:
@@ -165,12 +165,12 @@ def verifierDate(date_str,errorOut=True):
         try:
             myDate = datetime.strptime(date_str.split('.')[0],'%Y-%m-%dT%H:%M:%S')
         except:
-            if errorOut: 
+            if errorOut:
                 print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
             return ''
         return myDate.strftime('%d/%m/%Y %H:%M:%S')
     else:
-        if errorOut: 
+        if errorOut:
             print('Format de date non conforme :',date_str,". Changée en ''")
         return ''
     return date_str
@@ -222,7 +222,7 @@ def today(form='human'):
 
 def saison():
     auj = datetime.now()
-    if auj.month < 9 :
+    if auj.month < 7 :
         return str(auj.year-1)+"-"+str(auj.year)
     else:
         return str(auj.year)+"-"+str(auj.year+1)
@@ -234,7 +234,7 @@ class myLogin:
             attribut,valeur = ligne.split('=')
             attribut = attribut.lower().strip()
             valeur   = valeur.strip().replace('"',"").replace("'","")
-            if attribut[-4:] == '_int': 
+            if attribut[-4:] == '_int':
                 valeur = int(valeur)
                 attribut = attribut[:-4]
             setattr(self,attribut,valeur)

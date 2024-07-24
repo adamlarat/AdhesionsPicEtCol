@@ -26,3 +26,7 @@ Le dossier d'adhésions doit ressembler à ça : `user@machine: ~/.../Adhesions$
 5. Installer les dépendances python : `sudo pip3 install numpy unidecode wget markdow beautifulsoup4` Attention, ces modules python doivent être accessibles à tous les utilisateurs, en particulier www-data !
 6. Installer Java et le support Libreoffice\
    `sudo apt install default-jdk libreoffice-script-provider-python`
+
+6. Tester:
+   * Lancer la page avec `php -S 127.0.0.1:8000 -F notifications-helloasso.php`
+   * Executer `cd tests && ./commandeCurl.sh test_data.json http://127.0.0.1:8000/notifications-helloasso.php`
