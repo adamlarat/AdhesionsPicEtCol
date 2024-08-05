@@ -19,6 +19,7 @@ import numpy as np
 import wget, os, shutil
 import re
 from datetime import datetime
+from typing import List
 
 """
 On crée ici un dictionnaire qui relie les noms des attributs de la classe Adherent
@@ -28,8 +29,8 @@ dans l'ordre.
 importFSGT_elicence = [
   'numLicence', 'nom', 'prenom', 'genre', 'dateNaissance', 'email',
   'telephone', 'assurance', 'dateCertif', 'adresse', 'codePostal',
-  'ville', 'assurance', 'champ4', 'champ4',  'champ4', 'champ4', 
-  'champ4', 'champ4',  'champ4', 'champ4', 'champ4']  
+  'ville', 'assurance', 'champ4', 'champ4',  'champ4', 'champ4',
+  'champ4', 'champ4',  'champ4', 'champ4', 'champ4']
 titreFSGT = {
     ### 'attribut'    : 'ENTETE_COLONNE',
     'dateInscription' : 'DATE_INSCRIPTION',
@@ -69,6 +70,7 @@ titreFSGT = {
     'getion_matos'    : "GETION_MATOS",
     'mail_rando'      : "MAIL_RANDO",
     'mail_ski'        : "MAIL_SKI",
+    'mail_hiver'        : "MAIL_HIVER",
 }
 exportWeb = {
     "Date d'inscription" : 'dateInscription',
@@ -130,6 +132,7 @@ jsonToObject = {
     'getion_matos'  : "custom/Je participerai à la gestion du prêt de matériel",
     'mail_rando'  : "custom/Je m'inscris à la mailing list Randonnées",
     'mail_ski'  : "custom/Je m'inscris à la mailing list Sorties à ski",
+    'mail_hiver'  : "custom/Je m'inscris à la mailing list hiver",
     ### -------- Fin tableau exporté. Purs attributs de la classe Adhérents ------------------
     'lienCertif'      : "custom/Si tu as répondu",
     'lienLicence'     : "custom/Copie de la licence",
@@ -140,8 +143,8 @@ class Adherent:
 
     def __init__(self,nom='',prenom='',dateNaissance='',adhesions=[],ligne=0,json={},afficherErreur=True):
         if len(adhesions) > 0:
-            """ Si un fichier de gestion des adhésions de Pic&Col est fourni, 
-                Récupérations des données nécessaires, indiquée dans le 
+            """ Si un fichier de gestion des adhésions de Pic&Col est fourni,
+                Récupérations des données nécessaires, indiquée dans le
                 dictionnaire titreFSGT """
             for attribut in titreFSGT:
                 valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
@@ -154,12 +157,12 @@ class Adherent:
             """ Autres données récupérées depuis HelloAsso """
             self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE')
             self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
-            self.lienCertif    = mf.getEntry(adhesions,ligne,'LIEN_CERTIF') 
+            self.lienCertif    = mf.getEntry(adhesions,ligne,'LIEN_CERTIF')
             """ Formater les données """
             self.formaterAttributs()
         elif len(json) > 0:
-            """ Si un fichier de gestion des adhésions de Pic&Col est fourni sous format JSON, 
-                Récupérations des données nécessaires, indiquées dans le 
+            """ Si un fichier de gestion des adhésions de Pic&Col est fourni sous format JSON,
+                Récupérations des données nécessaires, indiquées dans le
                 dictionnaire jsonToObject """
             for attribut in jsonToObject:
                 valeur = mf.fromJson(json,jsonToObject[attribut])
@@ -173,7 +176,7 @@ class Adherent:
             ### l'API HelloAsso envoie les tarifs en centimes
             self.tarif = self.tarif//100
             self.formaterAttributs()
-        else : 
+        else :
             """ Si non, initialiser à rien """
             for attribut in titreFSGT:
                 setattr(self,attribut,"")
@@ -200,7 +203,7 @@ class Adherent:
         self.documents       = []
         """ Élements communs d'affichage des données """
         self.noter("Adhérent·e : "+self.prenom+" "+self.nom+"  "+self.statut)
-        
+
     def noter(self,*args):
         for arg in args:
             self.messageErreur += str(arg)
@@ -208,6 +211,21 @@ class Adherent:
         if self.afficherErreur :
             print(*args)
         return
+
+    def get_list_mailing_lists_to_subscribe(self) -> List[str]:
+        """Return the list of mailing lists names to which
+        the adherent must be subscribed by automation
+        """
+        # for everyone
+        list_mailing_list_to_subscribe = ["membres"]
+        for _list_name in [
+          "mail_rando",
+          "mail_ski",
+          "hiver",  # not handle in helloasso
+        ]:
+            if hasattr(self, _list_name):
+                list_mailing_list_to_subscribe.append(_list_name)
+        return list_mailing_list_to_subscribe
 
     def formaterAttributs(self):
         ### Permet de conserver les accents pour l'export à la fin, tout en assurant de bonnes recherches
@@ -258,7 +276,7 @@ class Adherent:
             nom = self.nom
         if prenom == '':
             prenom = self.prenom
-        if dateNaissance == '': 
+        if dateNaissance == '':
             dateNaissance = self.dateNaissance
         # Qu'on va rechercher dans les listes suivantes
         nomsOld    = adhesionsOld['noms']
@@ -270,7 +288,7 @@ class Adherent:
         if np.size(match) > 0:
             newMatch = np.where(prenomsOld[match]==prenom)[0]
             if (dateNaissance == '') and (np.size(newMatch) == 1):
-                ### Cas extrêmement rare où l'adhérent·e n'a pas fourni sa DdN 
+                ### Cas extrêmement rare où l'adhérent·e n'a pas fourni sa DdN
                 ### et qu'on la retrouve dans les anciennes adhésions
                 self.noter(" * INFO_"+self.statut+": l'adhérent·e n'a pas fourni sa date de naissance.",
                            "je complète avec la base de données :")
@@ -309,7 +327,7 @@ class Adherent:
                 nomInitial = self.prenomInitial
                 self.prenomInitial = self.nomInitial
                 self.nomInitial = nomInitial
-                
+
                 self.nom    = nom
                 self.prenom = prenom
                 self.noter(" * INFO_"+self.statut+": j'ai trouvé la personne en inversant nom et prénom.")
@@ -357,14 +375,14 @@ class Adherent:
             self.noter(self.nom,self.prenom,self.dateNaissance)
             self.erreur += 1
         return self
-    
+
     def completerInfoPlusRecentes(self,toutesLesAdhesions,ecraser=False):
         indice = self.derniereSaison['indice']
         ligne  = self.historique[indice]
         """ On cherche d'abord le certif pour pouvoir remplacer le nom de rercherche ensuite """
         dossierCM = toutesLesAdhesions[indice]['dossierCM']
         erreur = self.trouveCertif(dossierCM)
-        if erreur != '': 
+        if erreur != '':
             self.noter(" ERROR !!! Pas trouvé de document associé !")
             self.noter(" RAISON : ",erreur)
             self.noter(" DOSSIER de Recherche : ",dossierCM)
@@ -375,15 +393,15 @@ class Adherent:
                                      ligne,
                                      titreFSGT[attribut])
                 if (valeur != ''):
-                    setattr(self,attribut,valeur)    
+                    setattr(self,attribut,valeur)
         return self
-        
+
 
     def mettreAJour(self,toutesLesAdhesions):
-        
+
         if not self.ancienAdherent:
-            return 
-        
+            return
+
         indice = self.derniereSaison['indice']
         self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
         self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
@@ -462,7 +480,7 @@ class Adherent:
                 self.noter(" * - Je prends le plus ancien !")
                 self.numLicence = self.derniereAdhesion.numLicence
             else:
-                self.noter(" * - Je prends celui qui n'est pas vide !")                
+                self.noter(" * - Je prends celui qui n'est pas vide !")
         elif self.numLicence == '' and (self.statut == 'EXT' or self.statut == 'MUT'):
             self.noter(' * INFO_'+self.statut+': Numéro de licence manquant !')
         return
@@ -612,7 +630,7 @@ class Adherent:
             for attribut in titreFSGT:
                 chaine += self.exportAttribut(attribut)+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
-        return chaine 
+        return chaine
 
     def toODS(self):
         data = []

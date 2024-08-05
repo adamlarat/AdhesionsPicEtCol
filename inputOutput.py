@@ -16,6 +16,8 @@ import glob as glob
 from markdown import markdown
 from bs4 import BeautifulSoup as html
 import datetime as dt
+from typing import List
+
 
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
@@ -31,7 +33,7 @@ import datetime as dt
 #     return adhesions
 
 def recupDonneesHelloAsso(chemins):
-    """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso. 
+    """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso.
         On récupère les données au format JSON (dictionnaire Python)"""
     api    = hapi.HaApiV5(chemins['loginAPI'].api_base,
                           chemins['loginAPI'].client_id,
@@ -61,8 +63,8 @@ def recupDonneesHelloAsso(chemins):
     return data
 
 def formaterTable(adhesions):
-    """ Une fois les données récupérées dans un tableau numpy, on supprime 
-        les caractères inutiles et les lignes vides.    
+    """ Une fois les données récupérées dans un tableau numpy, on supprime
+        les caractères inutiles et les lignes vides.
     """
     nLines,nCols = np.shape(adhesions)
     supprLignes  = []
@@ -269,7 +271,7 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
     chemins['erreurExport'] += erreur
     return chemins
 
-def export(nvllesAdhesions,adhesionsEnCours,chemins):
+def export(nvllesAdhesions, adhesionsEnCours,chemins):
     """ Cette fonction finalise le travail sur une notification HelloAsso :
         - Écriture dans les fichiers
             * {mutations|fichier_import_FSGT|erreurs}.csv
@@ -299,19 +301,25 @@ def export(nvllesAdhesions,adhesionsEnCours,chemins):
     mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)
     print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
 
-def listesDiffusions(nvllesAdhesions,chemins):
+def listesDiffusions(nvllesAdhesions, chemins):
     for nvlleAdhesion in nvllesAdhesions:
         ### Modif le 2022.10.20. Faut faire la requête pour tt le monde
         ### À cause du nettoyage d'automne
         #if not nvlleAdhesion.ancienAdherent:
-        sm.envoyerEmail(login=chemins['loginContact'],
-                        sujet='Commande sympa',
-                        pour='sympa@listes.picetcol38.fr',
-                        corps='ADD membres '+\
-                            nvlleAdhesion.email+' '+\
-                            nvlleAdhesion.prenom+' '+\
-                            nvlleAdhesion.nom,
-                        bcc='adam@larat.fr')
+        for _mailing_list in nvlleAdhesion.get_list_mailing_lists_to_subscribe():
+            sm.envoyerEmail(
+                login=chemins['loginContact'],
+                sujet='Commande sympa',
+                pour='sympa@listes.picetcol38.fr',
+                corps=(
+                    # TODO several subscribe in same mail ?
+                    f"ADD {_mailing_list} " +
+                    nvlleAdhesion.email + ' ' +
+                    nvlleAdhesion.prenom + ' ' +
+                    nvlleAdhesion.nom
+                ),
+                bcc='adam@larat.fr'
+            )
     return
 
 def nLignes(fichier):
@@ -400,7 +408,7 @@ def mailAdherent(nvllesAdhesions,chemins):
                         html  = message,
                         bcc   = 'adam@larat.fr') # full HTML
 
-def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
+def mailRecapitulatif(nvllesAdhesions, adhesionsEnCours, chemins):
     # Constitution du message de log et pour le mail
     message = ""
     message+= "*******************\n"

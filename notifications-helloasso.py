@@ -66,7 +66,7 @@ print("*******************************************")
 print("Traitement de(s) nouvelle(s) adhésion(s)...")
 print("*******************************************")
 date_notification = jsonData['data']['date']
-nvllesAdhesions   = []
+nvllesAdhesions = []
 for entree in jsonData['data']['items']:
     """ Création de l'adhérent·e à partir du fichier JSON"""
     nouvo = Adherent(json=entree)
