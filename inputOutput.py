@@ -9,7 +9,6 @@ Created on Sat Nov 20 10:21:01 2021
 import numpy as np
 import os, shutil,re
 import myFunctions as mf
-import pylocalc as pyods
 import sendMail as sm
 import helloasso_api as hapi
 import glob as glob
@@ -146,11 +145,15 @@ def chargerToutesLesAdhesions(chemins: dict) -> list:
     saison                    = chemins['saison']
     saison0                   = saison
     toutesLesAdhesions = []
+    from helpers.helpers_ods import read_ods_file
     while os.path.exists(fichierAdhesionsCourantes):
-        adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
+        adhesions_np = read_ods_file(fichierAdhesionsCourantes)
         if len(np.shape(adhesions_np)) == 1:
             adhesions_np = adhesions_np[np.newaxis,:]
+        elif len(np.shape(adhesions_np)) == 0:
+            return toutesLesAdhesions
         adhesions_np = formaterTable(adhesions_np)
+        print("adhesions_np: {}".format(adhesions_np))  # TODO remove
         noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
                                     for nom in mf.getCol(adhesions_np,'NOM')])
         prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
@@ -181,28 +184,35 @@ def miseAJourAdhesionsEnCours(adherents,chemins):
         Elle y insère toutes les données relatives aux adhérent·e·s
     """
     erreur = ''
-    ### Ouverture du document
     adhesionsEnCours = chemins['adhesionsEnCoursODS']
-    doc = pyods.Document(adhesionsEnCours)
+
+    from helpers import helpers_ods
+
     try:
-        doc.connect()
-    except:
-        erreur+=" * ERREUR : pas de connection possible à "+adhesionsEnCours+'\n'
-    sheet = doc['Adhesions_Adultes']
-    ### mise-à-jour des adhésions
-    for adherent in adherents:
-        sheet.append_row(adherent.toODS())
-    try:
+
+        # Ouverture du document
+        doc = helpers_ods.ODSDocument(adhesionsEnCours)
+
+        # mise-à-jour des adhésions
+        for adherent in adherents:
+            doc.add_data_to_sheet("Adhesions_Adultes", adherent.toODS())
+
         doc.save()
-    except:
-        erreur+=" * ERREUR : impossible d'enregistrer le document "+adhesionsEnCours+'\n'
-    try:
-        doc.close()
-    except:
-        erreur+=" * ERREUR : le document "+adhesionsEnCours+" ne s'est pas fermé correctement\n"
+
+    except helpers_ods.OdsConnectException as ex:
+        print("erreur: {}".format(str(ex)))
+        erreur += str(ex)
+    except helpers_ods.OdsSaveError as ex:
+        print("erreur: {}".format(str(ex)))
+        erreur += str(ex)
+    except Exception as ex:
+        print("erreur: {}".format(str(ex)))
+        erreur += str(ex)
 
     os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
     chemins['erreurExport'] += erreur
+
+    return
 
 def fichierImportBaseLicence(chemins):
     """ Retourne le nom du fichier d'import pour le serveur de licence FSGT.
@@ -283,23 +293,26 @@ def export(nvllesAdhesions, adhesionsEnCours,chemins):
     # chaîne de caractères pour récupérer les erreurs lors de l'export
     chemins['erreurExport'] = ''
     print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture ODS ")
+
     # Écriture dans le fichier ODS des adhésions en cours
     miseAJourAdhesionsEnCours(nvllesAdhesions,chemins)
     print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ")
+
     # Écriture dans les fichiers FSGT
     chemins = ecrireFichiersFSGT(nvllesAdhesions,chemins)
 
     print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ")
     # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
-    listesDiffusions(nvllesAdhesions,chemins)
+    # listesDiffusions(nvllesAdhesions,chemins)  # TODO restore
 
     # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
     # mail récapitulatif des infos de Pic&Col pour les autres
-    mailAdherent(nvllesAdhesions,chemins)
+    # mailAdherent(nvllesAdhesions,chemins)  # TODO restore
 
     # Envoyer les logs par mail
-    mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)
+    # mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)  # TODO restore debug
     print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
+    return
 
 def listesDiffusions(nvllesAdhesions, chemins):
     for nvlleAdhesion in nvllesAdhesions:
@@ -514,8 +527,8 @@ def emptyDir(dirname):
 
 def verifierDossier(dirname):
     """ Si le dossier n'existe pas, le créer ! """
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
+    os.makedirs(os.path.dirname(dirname), exist_ok=True)
+    os.makedirs(dirname, exist_ok=True)
 
 """ 2022.09.21 : Procédure appelée par adhesionPicEtCol.py
     Amenée à disparaître """

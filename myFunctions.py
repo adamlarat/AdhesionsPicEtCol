@@ -7,8 +7,8 @@ Created on Sat Nov 20 13:09:03 2021
 """
 
 import re
-from unidecode import unidecode
 from datetime import date,datetime
+import warnings
 
 """ *************************** """
 """ MANIPULATION DES TABLES """
@@ -50,6 +50,9 @@ def fromJson(json,titre):
     return ''
 
 def getCol(adhesions,titre):
+    if len(adhesions) == 0:
+        warnings.warn("Request on empty data")
+        return []
     res = adhesions[:,(adhesions[0]==titre)]
     return res.reshape((len(res)))
 
@@ -64,6 +67,7 @@ def supprimerCaracteresSpeciaux(myStr):
         * re.sub substitue tous les caractères autres que les lettres minuscules et majuscules par rien
         * formatFunc permet d'appliquer une fonction de formatage (upper,lower, title)
     """
+    from unidecode import unidecode
     return re.sub(r'[^a-zA-Z0-9]','',unidecode(myStr))
 
 def statut(chaine):
@@ -142,6 +146,9 @@ def format_tel(tel):
 
 def verifierDate(date_str, errorOut=True):
     """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
+    print("-----------------------")  # TODO revmoe
+    print("date_str: {}".format(date_str))  # TODO revmoe
+    print("-----------------------")  # TODO revmoe
     if date_str == '' or date_str == 'EXT':
         return date_str
     ### HelloAsso renvoie un format bizarre %Y-%m-%dT%H%M%S.%ns+GMT
@@ -173,7 +180,10 @@ def verifierDate(date_str, errorOut=True):
         if errorOut:
             print('Format de date non conforme :',date_str,". Changée en ''")
         return ''
+    print("output")  # TODO revmoe
+    print("date_str: {}".format(date_str))  # TODO revmoe
     return date_str
+
 
 def getDate(myDate):
     """ Cette fonction prend un date sous forme de chaîne de caractère 'DD/MM/YYYY'

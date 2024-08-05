@@ -14,12 +14,13 @@ Created on Thu Nov 18 17:12:56 2021
         self.*
 """
 import myFunctions as mf
+from helpers import common_processing
 import inputOutput as io
 import numpy as np
 import wget, os, shutil
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Dict, Any
 
 """
 On crée ici un dictionnaire qui relie les noms des attributs de la classe Adherent
@@ -27,10 +28,21 @@ aux titres des colonnes stockées dans le fichiers d'adhérents Pic&Col (et par 
 dans l'ordre.
 """
 importFSGT_elicence = [
-  'numLicence', 'nom', 'prenom', 'genre', 'dateNaissance', 'email',
-  'telephone', 'assurance', 'dateCertif', 'adresse', 'codePostal',
-  'ville', 'assurance', 'champ4', 'champ4',  'champ4', 'champ4',
-  'champ4', 'champ4',  'champ4', 'champ4', 'champ4']
+  'numLicence',
+  'nom',
+  'prenom',
+  'genre',
+  'dateNaissance',
+  'email',
+  'telephone',
+  'assurance',
+  'dateCertif',
+  'adresse',
+  'codePostal',
+  'ville',
+  'assurance'
+]
+
 titreFSGT = {
     ### 'attribut'    : 'ENTETE_COLONNE',
     'dateInscription' : 'DATE_INSCRIPTION',
@@ -53,10 +65,6 @@ titreFSGT = {
     'numLicence'      : 'NUM_LICENCE',
     'typeLicence'     : 'TYPE_LIC_FSGT',
     'numClub'         : 'NUMCLUB',
-    'champ1'          : 'CHAMP1',
-    'champ2'          : 'CHAMP2',
-    'champ3'          : 'CHAMP3',
-    'champ4'          : 'CHAMP4',
     'dateCertif'      : 'DATE_CERTIF',
     ### -------- Fin Format FSGT ---------------
     'certifOK'        : 'CERTIF_OK',
@@ -115,10 +123,6 @@ jsonToObject = {
     'numLicence'      : 'custom/Numéro de la licence FSGT',
     'typeLicence'     : '',
     'numClub'         : '',
-    'champ1'          : '',
-    'champ2'          : '',
-    'champ3'          : '',
-    'champ4'          : '',
     'dateCertif'      : 'custom/Date du Certificat Médical',
     ### -------- Fin Format FSGT ---------------
     'certifOK'        : '',
@@ -141,7 +145,17 @@ jsonToObject = {
 
 class Adherent:
 
-    def __init__(self,nom='',prenom='',dateNaissance='',adhesions=[],ligne=0,json={},afficherErreur=True):
+    def __init__(
+      self,
+      nom='',
+      prenom='',
+      dateNaissance='',
+      adhesions=[],
+      ligne=0,
+      json={},
+      afficherErreur=True,
+      chemins: dict = {},
+    ):
         if len(adhesions) > 0:
             """ Si un fichier de gestion des adhésions de Pic&Col est fourni,
                 Récupérations des données nécessaires, indiquée dans le
@@ -151,7 +165,7 @@ class Adherent:
                 if type(valeur) == str:
                     valeur = valeur.strip()
                 if 'date' in attribut:
-                    setattr(self,attribut,mf.verifierDate(valeur))
+                    setattr(self,attribut,common_processing.verifierDate(valeur))
                 else:
                     setattr(self, attribut, valeur)
             """ Autres données récupérées depuis HelloAsso """
@@ -169,7 +183,7 @@ class Adherent:
                 if type(valeur) == str:
                     valeur = valeur.strip()
                 if 'date' in attribut:
-                    setattr(self, attribut, mf.verifierDate(valeur))
+                    setattr(self, attribut, common_processing.verifierDate(valeur))
                 else:
                     setattr(self, attribut, valeur)
             """ Formater les données """
@@ -186,7 +200,7 @@ class Adherent:
             """ Puis indiquer nom, prénom et date de naissance"""
             self.nom           = nom.strip()
             self.prenom        = prenom.strip()
-            self.dateNaissance = mf.verifierDate(dateNaissance.strip())
+            self.dateNaissance = common_processing.verifierDate(dateNaissance.strip())
             """ Si True, alors les notifications seront affichées à l'écran.
             Si False, elles seront uniquement stockés dans la chaine de caractères
             self.messageErreur """
@@ -204,6 +218,17 @@ class Adherent:
         """ Élements communs d'affichage des données """
         self.noter("Adhérent·e : "+self.prenom+" "+self.nom+"  "+self.statut)
 
+        # additional logger to sole python debugging
+        from helpers.common_processing import get_logger
+        logger_name = f"{datetime.now().strftime('%Y_%m_%d_%H%M%S')}_{self.prenom}_{self.nom}"
+        self._debug_logger = get_logger(
+            os.path.join(
+              chemins["dossierLogs"] if chemins else "Logs"
+              f"{logger_name}.log"
+            ),
+            terminal_output=True,
+          )
+
     def noter(self,*args):
         for arg in args:
             self.messageErreur += str(arg)
@@ -216,7 +241,6 @@ class Adherent:
         """Return the list of mailing lists names to which
         the adherent must be subscribed by automation
         """
-        # for everyone
         list_mailing_list_to_subscribe = ["membres"]
         for _list_name in [
           "mail_rando",
@@ -368,7 +392,7 @@ class Adherent:
                     self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
-        self.adhesionEnCours = (self.historique[0] >= 0)
+        self.adhesionEnCours = (self.historique[0] >= 0 if len(self.historique) > 0 else False)
         if (not self.ancienAdherent) and self.statut == 'RNV':
             self.noter(" * ERROR_"+self.statut+":",
                   "Pas d'adhérent·e trouvé·e dans notre base de donnée avec ce nom, ce prénom et cette date de naissance.")
@@ -381,8 +405,10 @@ class Adherent:
         ligne  = self.historique[indice]
         """ On cherche d'abord le certif pour pouvoir remplacer le nom de rercherche ensuite """
         dossierCM = toutesLesAdhesions[indice]['dossierCM']
-        erreur = self.trouveCertif(dossierCM)
+        erreur = self.trouveCertif(os.path.abspath(dossierCM))
         if erreur != '':
+            self._debug_logger.error(erreur)
+            self._debug_logger.error(dossierCM)
             self.noter(" ERROR !!! Pas trouvé de document associé !")
             self.noter(" RAISON : ",erreur)
             self.noter(" DOSSIER de Recherche : ",dossierCM)
@@ -513,16 +539,18 @@ class Adherent:
             if self.lienCertif == '':
                 ### Trouver le certificat déjà existant
                 oldCertifDir   = chemins['dossierCM'].replace(chemins['saison'],self.derniereSaison['nom'])
-                erreur = self.trouveCertif(oldCertifDir)
+                erreur = self.trouveCertif(os.path.abspath(oldCertifDir))
                 if erreur == '':
                     fichier = self.documents[-1]
-                    shutil.copy2(fichier,telechargements)
+                    shutil.copy2(os.path.abspath(fichier), os.path.abspath(telechargements))
                     dateFile = fichier.split('_')[1]
                     Annee    = dateFile[:4]
                     Mois     = dateFile[4:6]
                     Jour     = dateFile[6:]
                     self.dateCertif = Jour+'/'+Mois+'/'+Annee
                 else:
+                    self._debug_logger.error(erreur)
+                    self._debug_logger.error(chemins)
                     self.noter(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
                     self.noter(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
                     self.noter(' * Raison : ',erreur)
@@ -558,7 +586,7 @@ class Adherent:
             * Concordance des dates
             * Le numéro de licence a été rappatrié depuis le serveur de licence
         """
-        erreur = self.trouveCertif(dossierCM)
+        erreur = self.trouveCertif(os.path.abspath(dossierCM))
         if erreur == '':
             if self.statut != 'EXT':
                 fichier     = self.documents[-1]
@@ -574,6 +602,8 @@ class Adherent:
                     self.noter(' * DATE DU :',jour+'/'+mois+'/'+annee)
                     self.erreur += 1
         else:
+            self._debug_logger.error(erreur)
+            self._debug_logger.error(dossierCM)
             self.noter(' * ERROR_'+self.statut+' :', erreur)
             self.erreur += 1
         """ Vérifier le numéro de licence """
@@ -583,7 +613,7 @@ class Adherent:
             self.erreur += 1
         return self.erreur
 
-    def trouveCertif(self,oldCertifDir):
+    def trouveCertif(self, oldCertifDir):
         """ Cette fonction permet de chercher un certificat nommé
             '*Prenom_Nom*'
             qui serait stocké dans le dossier 'oldCertifDir'
@@ -600,7 +630,8 @@ class Adherent:
                         self.erreur += 1
                         return 'Document trouvé mais ne correspond pas au statut : '+fname
         self.erreur += 1
-        return 'Aucun document trouvé pour '+self.prenom+' '+self.nom
+        str_err = 'Aucun document trouvé pour '+self.prenom+' '+self.nom + f"dans {oldCertifDir}"
+        return str_err
 
     def exportAttribut(self,attribut):
         ### Ajouter des doubles quotes pour certains champs
@@ -632,14 +663,18 @@ class Adherent:
             chaine = chaine[:-1] ### pour enlever le dernier ';'
         return chaine
 
-    def toODS(self):
-        data = []
+    def toODS(self) -> Dict[str, Any]:
+        data = {}
         for attribut in titreFSGT:
-            valeur = getattr(self,attribut)
+            valeur = getattr(self, attribut)
             if 'date' in attribut:
-                data += mf.toLibreOfficeDate(valeur),
+                _field_value = [mf.toLibreOfficeDate(valeur)]
             elif type(valeur) == int:
-                data += str(valeur),
+              _field_value = [str(valeur)]
             else:
-                data += getattr(self,attribut).replace('"','').strip(),
+              _field_value = [getattr(self, attribut).replace('"','').strip()]
+            data[attribut] = _field_value
         return data
+
+    # def getODSheaders(self) -> List[str]:
+    #     return titreFSGT.values()

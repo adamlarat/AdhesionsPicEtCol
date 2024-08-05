@@ -37,10 +37,10 @@
     echo(date("His")." : "."Script Python \n");
     /* Exécution du script python */
     $output = array();
-    exec("export HOME=$www_data_home && python3 notifications-helloasso.py ".$fichierJson." 2>&1",$output);
+    exec("export HOME=$www_data_home && poetry run python notifications-helloasso.py ".$fichierJson." 2>&1",$output);
     /* Output de python dans les logs */
     foreach ($output as $line) {
-      fwrite($logs,$line."\n"); 
+      fwrite($logs,$line."\n");
     }
 
     echo(date("His")." : "."Export CSV 2 \n");

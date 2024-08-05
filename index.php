@@ -16,12 +16,12 @@
     <input type='text' placeholder='Date de naissance (JJ/MM/AAAA)' name="ddn" value="<?php echo $_GET["ddn"]; ?>" required/>
     <input type='submit' value="Obtenir mes informations"/>
   </form>
-  
+
   <table>
     <tbody>
       <?php
         if(!empty($_POST)){
-          $command = "python3 monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
+          $command = "poetry run python monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
           $output  = array();
           exec($command,$output);
           echo "<br/>\n<div id=reponse>\n";

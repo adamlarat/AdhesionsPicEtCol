@@ -30,7 +30,7 @@
             $nom    = strtoupper(supprimerCaracteresSpeciaux($data->items[0]->user->lastName));
             $event  = (count($data->items)==1)?"Membership":count($data->items)."Memberships";
             $logsName = $date."_".$prenom."_".$nom."_".$event;
-    
+
             /* Création du dossier de logs et backup */
             $dossierLogs    = "Logs/".$logsName."/";// "Logs/Static/"; //"Logs/".$logsName."/";
             $screenLogs     = $dossierLogs."screen.log";
@@ -47,7 +47,7 @@
               fwrite($logs,"La sauvegarde des données JSON a échoué !\n");
               fclose($logs);
             }
-            else {    
+            else {
               fclose($logs);
               /* Lancer une session screen si nécessaire */
               $screenId = "phpqueue";
@@ -80,4 +80,3 @@
     ?>
   </body>
 <html>
-

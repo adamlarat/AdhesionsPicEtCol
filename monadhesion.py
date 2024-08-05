@@ -11,6 +11,7 @@ import inputOutput as io
 from Adherent import Adherent
 import sendMail as sm
 
+from helpers import common_processing
 nom=""
 prenom=""
 ddn=""
@@ -37,13 +38,13 @@ else:
                 print("Le prenom renseigné n'est pas valide: ",valeur)
                 sys.exit(-1)
         elif variable.upper() == "DDN":
-            ddn=mf.verifierDate(valeur.strip(),errorOut=False)
+            ddn=common_processing.verifierDate(valeur.strip(),errorOut=False)
             if ddn == '':
                 print("La date de naissance renseignée n'est pas valide: ",valeur)
                 sys.exit(-1)
         else:
             print("Nom de variable inconnu : ",variable.upper(),valeur,arg)
-        
+
 saison=mf.saison()
 
 chemins = {
@@ -76,7 +77,7 @@ else:
     print("Prenom : "+prenom)
     print("Date de Naissance : "+ddn)
     sys.exit(-1)
-    
+
 # print("*************** MAIL ****************")
 # print("Historique = ",adherent.historique)
 # print("Ancient Adherent = ",adherent.ancienAdherent)
@@ -88,4 +89,3 @@ else:
 # print("PJ = ",adherent.documents)
 # print("Erreurs = ",adherent.messageErreur)
 # print("*************** MAIL ****************")
-

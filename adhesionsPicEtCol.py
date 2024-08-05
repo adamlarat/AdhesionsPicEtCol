@@ -18,7 +18,7 @@ if len(sys.argv) < 3:
     print("Syntaxe: python adhesionsPicEtCol.py\
                     [PATH]/AdhesionsPicEtCol_saisonEnCours.ods\
                     [PATH]/dossierLogs"
-                        
+
     )
     print("***** ATTENTION !!! ******")
     print()
@@ -34,6 +34,8 @@ else:
 
 ### Dossiers et fichiers nécessaires au traitement des adhésions
 dossierAdhesions, saison = os.path.split(os.path.split(adhesionsEnCours)[0])
+print("--------------------------------")
+print("saison: {}".format(saison))
 dossierAdhesions        += "/"
 chemins = {
     'dossierLogs'         : dossierLogs,
@@ -65,7 +67,7 @@ nb_deja = 0
 io.emptyDir(chemins['Telechargements'])
 ### Parcours de la liste téléchargées sur helloasso.com
 for entree in reversed(helloAsso_json):
-    adherent = Adherent(json=entree)
+    adherent = Adherent(json=entree, chemins=chemins)
     adherent.verifierTarif()
     adherent.construireHistorique(toutesLesAdhesions)
     adherent.mettreAJour(toutesLesAdhesions)
@@ -75,7 +77,7 @@ for entree in reversed(helloAsso_json):
         adherent.formaterPourExport()
         nvllesAdhesions += (adherent,)
         nb_nvo += 1
-    else: 
+    else:
         nb_deja += 1
 
 print("**************************************")
@@ -88,11 +90,11 @@ Nb_enCours = np.shape(enCours_np)[0]-1
 dejaAdherents = []
 nb_enCours = 0
 for i in range(1,Nb_enCours+1):
-    adherent = Adherent(adhesions=enCours_np,ligne=i)
+    adherent = Adherent(adhesions=enCours_np,ligne=i, chemins=chemins)
     adherent.verifierAdhesionEnCours(chemins['dossierCM'])
     dejaAdherents += (adherent,)
     nb_enCours += 1
-    
+
 compteurs = {
     'helloAsso' : nb_helloAsso,
     'nouveaux'  : nb_nvo,

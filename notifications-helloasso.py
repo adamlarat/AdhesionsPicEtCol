@@ -10,9 +10,10 @@ import myFunctions as mf
 import inputOutput as io
 import numpy as np
 from Adherent import Adherent
-from datetime.datetime import now
+from helpers import common_processing
+from datetime import datetime
 
-print(now().strftime("%H%M%S")," : ","Début…")
+print(datetime.now().strftime("%H%M%S")," : ","Début…")
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir la notification sous forme de fichier JSON !")
@@ -30,7 +31,7 @@ else:
         print("Abandon !")
         sys.exit(-1)
 
-print(now().strftime("%H%M%S")," : ","Chemins")
+print(datetime.now().strftime("%H%M%S")," : ","Chemins")
 
 saison           = mf.saison()
 dossierLogs      = os.path.split(sys.argv[1])[0]+'/'
@@ -51,17 +52,17 @@ chemins = {
     'adhesionsEnCoursODS'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".ods",
     'adhesionsEnCoursCSV'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".csv",
     'dossierATraiter'        : dossierATraiter,
-    # 'Telechargements'        : dossierAdhesions+'CertificatsMedicaux/'
+    'dossierCM'              : dossierAdhesions+"CertificatsMedicaux/",
     'Telechargements'        : dossierAdhesions+'Telechargement_'+saison,
 }
 io.verifierDossier(chemins['dossierATraiter'])
 io.verifierDossier(chemins['Telechargements'])
 
-print(now().strftime("%H%M%S")," : ","Charge adhésions")
+print(datetime.now().strftime("%H%M%S")," : ","Charge adhésions")
 ### Charger toutes les précédentes saisons en mémoire
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
-print(now().strftime("%H%M%S")," : ","Traitement")
+print(datetime.now().strftime("%H%M%S")," : ","Traitement")
 print("*******************************************")
 print("Traitement de(s) nouvelle(s) adhésion(s)...")
 print("*******************************************")
@@ -71,7 +72,7 @@ for entree in jsonData['data']['items']:
     """ Création de l'adhérent·e à partir du fichier JSON"""
     nouvo = Adherent(json=entree)
     ### Le format des notifications est différent. La date n'est pas accessible dans jsonData['data']['items'][0]
-    nouvo.dateInscription = mf.verifierDate(date_notification)
+    nouvo.dateInscription = common_processing.verifierDate(date_notification)
     ### Vérifie que le tarif correspond bien au statut et à la licence demandée
     nouvo.verifierTarif()
     ### Construit l'historique de l'adhérent·e, à partir de nom, prénom, ddn
@@ -90,20 +91,27 @@ if nvllesAdhesions == []:
     print("           Cette notification a probablement déjà été traitée. Je m'arrête là !")
     print("           Il y a %i entrée(s) dans cette notification"%len(jsonData['data']['items']))
     sys.exit(-1)
-print(now().strftime("%H%M%S")," : ","Vérif ")
+print(datetime.now().strftime("%H%M%S")," : ","Vérif ")
 
 print("**************************************")
 print("Vérification des adhésions en cours...")
 print("**************************************")
 """ Vérification des adhésions en cours """
 ### Nb d'adhésions en cours
-enCours_np = toutesLesAdhesions[0]['tableau']
-Nb_enCours = np.shape(enCours_np)[0]-1
+if len(toutesLesAdhesions) > 0:
+    enCours_np = toutesLesAdhesions[0]['tableau']
+    Nb_enCours = np.shape(enCours_np)[0]-1
+else:
+    print("Warning: Aucune adhesion precedente trouvee!")
+    enCours_np = []
+    Nb_enCours = 1
+
+
 adhesionsEnCours = []
 erreurEnCours = 0
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
-    erreur = adherent.verifierAdhesionEnCours()
+    erreur = adherent.verifierAdhesionEnCours(chemins["dossierCM"])
     if erreur > 0:
         print(adherent.messageErreur)
     adhesionsEnCours += (adherent,)
@@ -111,8 +119,8 @@ for i in range(1,Nb_enCours+1):
 if erreurEnCours == 0:
     print("  Toutes les adhésions en cours sont nickels !")
 
-print(now().strftime("%H%M%S")," : ","Export ")
+print(datetime.now().strftime("%H%M%S")," : ","Export ")
 
 """ Finalisation du travail et écriture dans les fichiers adhoc """
 io.export(nvllesAdhesions,adhesionsEnCours,chemins)
-print(now().strftime("%H%M%S")," : ","Fin ")
+print(datetime.now().strftime("%H%M%S")," : ","Fin ")
