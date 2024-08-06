@@ -38,7 +38,8 @@ else
   sudo -u $user libreoffice --convert-to csv:"Text - txt - csv (StarCalc)":59,34,76 --outdir ${dossierAdhesions}/${saison} ${fichierCourant}
   
   ## Traitement des adhésions par python3 (>= 3.8 pour pylocalc)
-  sudo -u $user sudo -u $user python3 adhesionsPicEtCol.py ${fichierCourant} ${dossierLogs} | tee ${dossierLogs}/${today}_nouvellesAdhesions.log 
+  sudo -u $user source venv/bin/activate # activation du virtual environnement (venv)
+  sudo -u $user python3 adhesionsPicEtCol.py ${fichierCourant} ${dossierLogs} | tee ${dossierLogs}/${today}_nouvellesAdhesions.log 
   ## Mise-à-jour du CSV
   sudo -u $user libreoffice --convert-to csv:"Text - txt - csv (StarCalc)":59,34,76 --outdir ${dossierAdhesions}/${saison} ${fichierCourant}
   
