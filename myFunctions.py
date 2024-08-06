@@ -144,46 +144,6 @@ def format_tel(tel):
             form_tel+=i
     return form_tel[:-1]
 
-def verifierDate(date_str, errorOut=True):
-    """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
-    print("-----------------------")  # TODO revmoe
-    print("date_str: {}".format(date_str))  # TODO revmoe
-    print("-----------------------")  # TODO revmoe
-    if date_str == '' or date_str == 'EXT':
-        return date_str
-    ### HelloAsso renvoie un format bizarre %Y-%m-%dT%H%M%S.%ns+GMT
-    liste    = date_str.replace('T',' ').replace('.',' ').split(' ')
-    if len(liste) == 1:
-        try:
-            myDate = datetime.strptime(date_str,'%d/%m/%Y')
-        except:
-            if errorOut:
-                print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
-            return ''
-    elif len(liste) == 2:
-        try:
-            myDate = datetime.strptime(date_str,'%d/%m/%Y %H:%M:%S')
-        except:
-            if errorOut:
-                print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
-            return ''
-    elif len(liste) == 3:
-        ### Format de date HelloAsso
-        try:
-            myDate = datetime.strptime(date_str.split('.')[0],'%Y-%m-%dT%H:%M:%S')
-        except:
-            if errorOut:
-                print("La date n'est pas formatée correctement: ",date_str,". Changée en ''")
-            return ''
-        return myDate.strftime('%d/%m/%Y %H:%M:%S')
-    else:
-        if errorOut:
-            print('Format de date non conforme :',date_str,". Changée en ''")
-        return ''
-    print("output")  # TODO revmoe
-    print("date_str: {}".format(date_str))  # TODO revmoe
-    return date_str
-
 
 def getDate(myDate):
     """ Cette fonction prend un date sous forme de chaîne de caractère 'DD/MM/YYYY'

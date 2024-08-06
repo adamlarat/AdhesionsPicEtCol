@@ -21,6 +21,7 @@ import wget, os, shutil
 import re
 from datetime import datetime
 from typing import List, Dict, Any
+from helpers.common_processing import get_logger
 
 """
 On crée ici un dictionnaire qui relie les noms des attributs de la classe Adherent
@@ -156,18 +157,25 @@ class Adherent:
       afficherErreur=True,
       chemins: dict = {},
     ):
+
+        # Les entrees de ce logger doivent se retrouver dans le meme fichier log
+        # que celui set set par notifications-helloasso.py
+        self._debug_logger = get_logger(
+            terminal_output=True,
+            in_logger_name=f"{datetime.now().strftime('%Y_%m_%d_%H%M%S')}",
+          )
+
         if len(adhesions) > 0:
             """ Si un fichier de gestion des adhésions de Pic&Col est fourni,
                 Récupérations des données nécessaires, indiquée dans le
                 dictionnaire titreFSGT """
             for attribut in titreFSGT:
-                valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
-                if type(valeur) == str:
-                    valeur = valeur.strip()
-                if 'date' in attribut:
-                    setattr(self,attribut,common_processing.verifierDate(valeur))
-                else:
-                    setattr(self, attribut, valeur)
+              if attribut == "dateInscription":
+                # cet attribut est set par notifications-helloasso.py
+                continue
+              valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
+              self.set_attributes_from_data(attribut, valeur)
+
             """ Autres données récupérées depuis HelloAsso """
             self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE')
             self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
@@ -179,13 +187,14 @@ class Adherent:
                 Récupérations des données nécessaires, indiquées dans le
                 dictionnaire jsonToObject """
             for attribut in jsonToObject:
-                valeur = mf.fromJson(json,jsonToObject[attribut])
-                if type(valeur) == str:
-                    valeur = valeur.strip()
-                if 'date' in attribut:
-                    setattr(self, attribut, common_processing.verifierDate(valeur))
-                else:
-                    setattr(self, attribut, valeur)
+              if attribut == "dateInscription":
+                # cet attribut est set par notifications-helloasso.py
+                continue
+              valeur = mf.fromJson(json,jsonToObject[attribut])
+
+              self.set_attributes_from_data(attribut, valeur)
+              self._debug_logger.info(f"{attribut}: {valeur}")
+
             """ Formater les données """
             ### l'API HelloAsso envoie les tarifs en centimes
             self.tarif = self.tarif//100
@@ -218,16 +227,18 @@ class Adherent:
         """ Élements communs d'affichage des données """
         self.noter("Adhérent·e : "+self.prenom+" "+self.nom+"  "+self.statut)
 
-        # additional logger to sole python debugging
-        from helpers.common_processing import get_logger
-        logger_name = f"{datetime.now().strftime('%Y_%m_%d_%H%M%S')}_{self.prenom}_{self.nom}"
-        self._debug_logger = get_logger(
-            os.path.join(
-              chemins["dossierLogs"] if chemins else "Logs"
-              f"{logger_name}.log"
-            ),
-            terminal_output=True,
-          )
+    def set_attributes_from_data(self, attribut: str, valeur) -> None:
+      """
+      Wrap setting attribute with given value with some processing
+      """
+      if type(valeur) == str:
+        valeur = valeur.strip()
+      if 'date' in attribut:
+        setattr(self,attribut,common_processing.verifierDate(valeur))
+        self._debug_logger.debug(f"{valeur} -> {getattr(self, attribut)}")
+      else:
+        setattr(self, attribut, valeur)
+      return
 
     def noter(self,*args):
         for arg in args:
@@ -271,6 +282,7 @@ class Adherent:
         ### Modification des adresses pour le téléchargement des documents joints
         self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+        print("self.dateCertif: {}".format(self.dateCertif))
         return
 
     def formaterPourExport(self):
@@ -383,8 +395,9 @@ class Adherent:
     def construireHistorique(self,toutesLesAdhesions):
         ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
         nSaisons = len(toutesLesAdhesions)
+        print("nSaisons: {}".format(nSaisons))
         for i in range(nSaisons):
-            self.historique    += (self.trouveAdhesion(toutesLesAdhesions[i]),)
+            self.historique += (self.trouveAdhesion(toutesLesAdhesions[i]),)
             if self.historique[i] >=0:
                 self.ancienAdherent = True
                 if self.derniereSaison['indice'] < 0:
@@ -542,7 +555,10 @@ class Adherent:
                 erreur = self.trouveCertif(os.path.abspath(oldCertifDir))
                 if erreur == '':
                     fichier = self.documents[-1]
-                    shutil.copy2(os.path.abspath(fichier), os.path.abspath(telechargements))
+                    shutil.copy2(
+                      os.path.abspath(fichier),
+                      os.path.abspath(telechargements)
+                    )
                     dateFile = fichier.split('_')[1]
                     Annee    = dateFile[:4]
                     Mois     = dateFile[4:6]
@@ -550,6 +566,7 @@ class Adherent:
                     self.dateCertif = Jour+'/'+Mois+'/'+Annee
                 else:
                     self._debug_logger.error(erreur)
+                    self._debug_logger.error(self.derniereSaison)
                     self._debug_logger.error(chemins)
                     self.noter(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
                     self.noter(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
@@ -624,7 +641,7 @@ class Adherent:
                     if (self.statut != 'EXT' and fname[:7] == 'Certif_')\
                        or \
                        (self.statut == 'EXT' and fname[:7] == 'Licence'):
-                        self.documents += oldCertifDir+fname,
+                        self.documents += os.path.join(oldCertifDir, fname),
                         return ''
                     else:
                         self.erreur += 1
@@ -666,15 +683,12 @@ class Adherent:
     def toODS(self) -> Dict[str, Any]:
         data = {}
         for attribut in titreFSGT:
-            valeur = getattr(self, attribut)
-            if 'date' in attribut:
-                _field_value = [mf.toLibreOfficeDate(valeur)]
-            elif type(valeur) == int:
-              _field_value = [str(valeur)]
-            else:
-              _field_value = [getattr(self, attribut).replace('"','').strip()]
-            data[attribut] = _field_value
+            _field_value = getattr(self, attribut)
+            # if 'date' in attribut:
+            #     _field_value = [mf.toLibreOfficeDate(_field_value)]
+            if type(_field_value) == int:
+              _field_value = [str(_field_value)]
+            # else:
+            #   _field_value = [getattr(self, attribut).replace('"','').strip()]
+            data[titreFSGT[attribut]] = _field_value
         return data
-
-    # def getODSheaders(self) -> List[str]:
-    #     return titreFSGT.values()

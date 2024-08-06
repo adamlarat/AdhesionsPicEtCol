@@ -23,8 +23,8 @@ if len(sys.argv) < 3:
     print("***** ATTENTION !!! ******")
     print()
     sys.exit(
-        "Le fichier courant des adhésions ou\
-            le chemin vers le dossier de logs n'ont pas été fournis !"
+        "Le fichier courant des adhesions ou\
+            le chemin vers le dossier de logs n'ont pas ete fournis !"
     )
 else:
     # Nom du fichier courant des adhésions Pic&col
@@ -34,8 +34,6 @@ else:
 
 ### Dossiers et fichiers nécessaires au traitement des adhésions
 dossierAdhesions, saison = os.path.split(os.path.split(adhesionsEnCours)[0])
-print("--------------------------------")
-print("saison: {}".format(saison))
 dossierAdhesions        += "/"
 chemins = {
     'dossierLogs'         : dossierLogs,
@@ -81,9 +79,9 @@ for entree in reversed(helloAsso_json):
         nb_deja += 1
 
 print("**************************************")
-print("Vérification des adhésions en cours...")
+print("Verification des adhesions en cours...")
 print("**************************************")
-""" Vérification des adhésions en cours """
+""" Verification des adhesions en cours """
 ### Nb d'adhésions en cours
 enCours_np = toutesLesAdhesions[0]['tableau']
 Nb_enCours = np.shape(enCours_np)[0]-1

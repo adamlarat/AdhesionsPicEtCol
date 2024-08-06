@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*
 
-# OLD function
+from typing import Optional
+
+
+# OLD function when using uno
 # def verifierDate(date_str, errorOut=True):
 #     """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
 #     if date_str == '' or date_str == 'EXT':
@@ -34,18 +37,12 @@
 #         if errorOut:
 #             print('Format de date non conforme :',date_str,". Changée en ''")
 #         return ''
-#     print("output")  # TODO revmoe
-#     print("date_str: {}".format(date_str))  # TODO revmoe
 #     return date_str
-
 
 
 
 def verifierDate(date_str: str, errorOut=True) -> str:
     """ Cette fonction vérifie qu'une date sous forme de chaîne de caractère est correcte """
-    # print("-----------------------")  # TODO revmoe
-    # print("date_str: {}".format(date_str))  # TODO revmoe
-    # print("-----------------------")  # TODO revmoe
     from dateutil import parser
     from datetime import datetime
     import pytz
@@ -70,14 +67,12 @@ def verifierDate(date_str: str, errorOut=True) -> str:
     except ValueError as e:
         if errorOut is True:
             print(f"La date n'est pas formatée correctement: {date_str}. Erreur: {str(e)}")
-    # print("-----------------------")  # TODO revmoe
-    # print("out_date: {}".format(out_date))  # TODO revmoe
-    # print("-----------------------")  # TODO revmoe
     return out_date
 
 
+
 def get_logger(
-    log_file: str,
+    log_file: Optional[str] = None,
     terminal_output: bool = False,
     roll_over: bool = True,
     in_logger_name: str = "logger",
@@ -89,7 +84,6 @@ def get_logger(
     by new logging
 
     :param log_file: complete path to the register logging file
-    :type log_file: str or pathlib.Path
     :param terminal_output: if the logging entries are written to sdout,
         defaults to False
     :type terminal_output: bool, optional
@@ -125,27 +119,28 @@ def get_logger(
         # handler already captured
         return logger
 
-    file_handler = RotatingFileHandler(log_file, "w", backupCount=0)
-
-    if roll_over:
-        if isinstance(log_file, str):
-            should_roll_over = os.path.isfile(log_file)
-        else:
-            # pathlib
-            should_roll_over = log_file.exists()
-        if should_roll_over:  # log already exists, roll over!
-            file_handler.doRollover()
-
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     if terminal_output:
         # output text in terminal
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(logger_level)
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+
+    if log_file is not None:
+        file_handler = RotatingFileHandler(log_file, "w", backupCount=0)
+        if roll_over:
+            if isinstance(log_file, str):
+                should_roll_over = os.path.isfile(log_file)
+            else:
+                # pathlib
+                should_roll_over = log_file.exists()
+            if should_roll_over:  # log already exists, roll over!
+                file_handler.doRollover()
+
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
 
     try:  # get fancy colored outputs in terminal
         import coloredlogs
@@ -171,10 +166,10 @@ def get_logger(
     except ImportError:
         # the package is not installed
         # not a problem as it is just extra colors
-        warnings.warn(
-            "\n\nInstall coloredlogs with \n`pip install coloredlogs`\n"
-            + "if you want a colorfull output of loggings in terminal !!\n\n"
-        )
+        # warnings.warn(
+        #     "\n\nInstall coloredlogs with \n`pip install coloredlogs`\n"
+        #     + "if you want a colorfull output of loggings in terminal !!\n\n"
+        # )
         pass
     return logger
 

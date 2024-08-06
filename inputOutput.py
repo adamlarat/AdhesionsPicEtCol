@@ -31,6 +31,8 @@ from typing import List
 #     adhesions = remplacerTitresColonnes(adhesions)
 #     return adhesions
 
+SEND_EMAILS = False  # must be True when not debugging
+
 def recupDonneesHelloAsso(chemins):
     """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso.
         On récupère les données au format JSON (dictionnaire Python)"""
@@ -70,7 +72,8 @@ def formaterTable(adhesions):
     for line in range(nLines):
         delete = True
         for col in range(nCols):
-            adhesions[line,col] = adhesions[line,col].replace('"','').strip()
+            if isinstance(adhesions[line,col], str):
+                adhesions[line,col] = adhesions[line,col].replace('"','').strip()
             delete = (delete and adhesions[line,col] == "")
         if delete:
             supprLignes += line,
@@ -135,7 +138,7 @@ def formaterTable(adhesions):
 #     return adhesions
 
 
-def chargerToutesLesAdhesions(chemins: dict) -> list:
+def chargerToutesLesAdhesions(chemins: dict) -> List[dict]:
     """ Cette fonction parcours tous les dossiers présents dans 'dossierAdhesions'
         par ordre décroissant des saisons (2021-2022, puis 2020-2021, etc...)
         Tant qu'un fichier AdhesionsPicEtCol_${saison}.csv est trouvé, il est
@@ -147,13 +150,18 @@ def chargerToutesLesAdhesions(chemins: dict) -> list:
     toutesLesAdhesions = []
     from helpers.helpers_ods import read_ods_file
     while os.path.exists(fichierAdhesionsCourantes):
-        adhesions_np = read_ods_file(fichierAdhesionsCourantes)
+
+        # if ".csv" in fichierAdhesionsCourantes:
+        #     import pandas as pd
+        #     adhesions_np = pd.read_csv(fichierAdhesionsCourantes, sep=';').to_numpy()
+        # else:
+        #     adhesions_np = read_ods_file(fichierAdhesionsCourantes).to_numpy()
+
+        adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
+
         if len(np.shape(adhesions_np)) == 1:
             adhesions_np = adhesions_np[np.newaxis,:]
-        elif len(np.shape(adhesions_np)) == 0:
-            return toutesLesAdhesions
         adhesions_np = formaterTable(adhesions_np)
-        print("adhesions_np: {}".format(adhesions_np))  # TODO remove
         noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
                                     for nom in mf.getCol(adhesions_np,'NOM')])
         prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
@@ -302,16 +310,18 @@ def export(nvllesAdhesions, adhesionsEnCours,chemins):
     chemins = ecrireFichiersFSGT(nvllesAdhesions,chemins)
 
     print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ")
-    # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
-    # listesDiffusions(nvllesAdhesions,chemins)  # TODO restore
 
-    # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
-    # mail récapitulatif des infos de Pic&Col pour les autres
-    # mailAdherent(nvllesAdhesions,chemins)  # TODO restore
+    if SEND_EMAILS is True:
+        # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
+        listesDiffusions(nvllesAdhesions,chemins)
 
-    # Envoyer les logs par mail
-    # mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)  # TODO restore debug
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
+        # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
+        # mail récapitulatif des infos de Pic&Col pour les autres
+        mailAdherent(nvllesAdhesions,chemins)
+
+        # Envoyer les logs par mail
+        mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)
+        print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
     return
 
 def listesDiffusions(nvllesAdhesions, chemins):
