@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Sat Nov 20 10:18:41 2021
@@ -15,7 +15,7 @@ import myFunctions as mf
 
 if len(sys.argv) < 3:
     print("***** ATTENTION !!! ******")
-    print("Syntaxe: python adhesionsPicEtCol.py\
+    print("Syntaxe: venv/bin/python3 adhesionsPicEtCol.py\
                     [PATH]/AdhesionsPicEtCol_saisonEnCours.ods\
                     [PATH]/dossierLogs"
                         

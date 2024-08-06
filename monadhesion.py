@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 18 15:18:21 2022
@@ -18,7 +18,7 @@ ddn=""
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir au moins un des trois arguments !")
-    print("Syntaxe: python monadhesion.py NOM=monNom PRENOM=monPrenom DDN=maDateDeNaissance")
+    print("Syntaxe: venv/bin/python3 monadhesion.py NOM=monNom PRENOM=monPrenom DDN=maDateDeNaissance")
     print("***** ATTENTION !!! ******")
     print()
     sys.exit(-1)

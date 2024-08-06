@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Sep 13 10:30:23 2022
@@ -16,7 +16,7 @@ print(now().strftime("%H%M%S")," : ","Début…")
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir la notification sous forme de fichier JSON !")
-    print("Syntaxe: python notifications-helloasso.py jsonData")
+    print("Syntaxe: venv/bin/python3 notifications-helloasso.py jsonData")
     print("***** ATTENTION !!! ******")
     print()
     sys.exit(-1)
