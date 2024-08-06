@@ -85,7 +85,8 @@ for entree in jsonData['data']['items']:
         ### Remettre les noms et prénoms initiaux. Valeurs par défaut pour les colonnes vides. Formatage du texte.
         nouvo.formaterPourExport()
         ### Ajouter à la liste des nouvelles adhésions
-        nvllesAdhesions += (nouvo,)
+        nvllesAdhesions.append(nouvo)
+
 if nvllesAdhesions == []:
     print(" * ERROR : Il n'y a pas de nouvelle adhésion dans cette notification. Tou·te·s sont déjà adhérent·e·s !")
     print("           Cette notification a probablement déjà été traitée. Je m'arrête là !")
@@ -122,5 +123,5 @@ if erreurEnCours == 0:
 print(datetime.now().strftime("%H%M%S")," : ","Export ")
 
 """ Finalisation du travail et écriture dans les fichiers adhoc """
-io.export(nvllesAdhesions,adhesionsEnCours,chemins)
+# io.export(nvllesAdhesions,adhesionsEnCours,chemins)  # TODO restore # commented for debug
 print(datetime.now().strftime("%H%M%S")," : ","Fin ")

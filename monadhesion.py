@@ -57,7 +57,7 @@ toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
 ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
 adherent = Adherent(nom=nom,prenom=prenom,dateNaissance=ddn,afficherErreur=False)
-adherent = adherent.construireHistorique(toutesLesAdhesions)
+adherent.construireHistorique(toutesLesAdhesions)
 
 ### Si l'historique n'est pas vide
 if adherent.ancienAdherent:

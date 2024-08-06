@@ -149,37 +149,43 @@ def chargerToutesLesAdhesions(chemins: dict) -> List[dict]:
     saison0                   = saison
     toutesLesAdhesions = []
     from helpers.helpers_ods import read_ods_file
-    while os.path.exists(fichierAdhesionsCourantes):
 
-        # if ".csv" in fichierAdhesionsCourantes:
-        #     import pandas as pd
-        #     adhesions_np = pd.read_csv(fichierAdhesionsCourantes, sep=';').to_numpy()
-        # else:
-        #     adhesions_np = read_ods_file(fichierAdhesionsCourantes).to_numpy()
+    looked_current_season = False  # handle case of new season, file not created yet
 
-        adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
+    while looked_current_season is False or os.path.exists(fichierAdhesionsCourantes):
 
-        if len(np.shape(adhesions_np)) == 1:
-            adhesions_np = adhesions_np[np.newaxis,:]
-        adhesions_np = formaterTable(adhesions_np)
-        noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
-                                    for nom in mf.getCol(adhesions_np,'NOM')])
-        prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
-                                    for prenom in mf.getCol(adhesions_np,'PRENOM')])
-        ddn = np.array([
-            dob.replace('"','').strip()
-            for dob in mf.getCol(adhesions_np,'NAISS')
-        ])
-        # Enregistrer les adhésions dans une structure adhoc
-        toutesLesAdhesions += {
-            'saison':saison,
-            'noms':noms,
-            'prenoms':prenoms,
-            'ddn':ddn,
-            'tableau':adhesions_np,
-            'fichier':fichierAdhesionsCourantes,
-            'dossierCM':chemins['dossierCM'].replace(saison0,saison)
-        },
+        looked_current_season = True
+
+        if os.path.exists(fichierAdhesionsCourantes):
+            # if ".csv" in fichierAdhesionsCourantes:
+            #     import pandas as pd
+            #     adhesions_np = pd.read_csv(fichierAdhesionsCourantes, sep=';').to_numpy()
+            # else:
+            #     adhesions_np = read_ods_file(fichierAdhesionsCourantes).to_numpy()
+
+            adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
+
+            if len(np.shape(adhesions_np)) == 1:
+                adhesions_np = adhesions_np[np.newaxis,:]
+            adhesions_np = formaterTable(adhesions_np)
+            noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
+                                        for nom in mf.getCol(adhesions_np,'NOM')])
+            prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
+                                        for prenom in mf.getCol(adhesions_np,'PRENOM')])
+            ddn = np.array([
+                dob.replace('"','').strip()
+                for dob in mf.getCol(adhesions_np,'NAISS')
+            ])
+            # Enregistrer les adhésions dans une structure adhoc
+            toutesLesAdhesions += {
+                'saison':saison,
+                'noms':noms,
+                'prenoms':prenoms,
+                'ddn':ddn,
+                'tableau':adhesions_np,
+                'fichier':fichierAdhesionsCourantes,
+                'dossierCM':chemins['dossierCM'].replace(saison0,saison)
+            },
         # Reculer d'une saison
         annee       = int(saison.split("-")[0])-1
         nvlleSaison = str(annee)+"-"+str(annee+1)
@@ -289,7 +295,7 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
     chemins['erreurExport'] += erreur
     return chemins
 
-def export(nvllesAdhesions, adhesionsEnCours,chemins):
+def export(nvllesAdhesions: list, adhesionsEnCours,chemins):
     """ Cette fonction finalise le travail sur une notification HelloAsso :
         - Écriture dans les fichiers
             * {mutations|fichier_import_FSGT|erreurs}.csv

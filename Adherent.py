@@ -392,10 +392,10 @@ class Adherent:
             self.statut = '4MS'
         return
 
-    def construireHistorique(self,toutesLesAdhesions):
+    def construireHistorique(self, toutesLesAdhesions):
         ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
         nSaisons = len(toutesLesAdhesions)
-        print("nSaisons: {}".format(nSaisons))
+        self._debug_logger.info("nSaisons: {}".format(nSaisons))
         for i in range(nSaisons):
             self.historique += (self.trouveAdhesion(toutesLesAdhesions[i]),)
             if self.historique[i] >=0:
@@ -405,13 +405,13 @@ class Adherent:
                     self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
-        self.adhesionEnCours = (self.historique[0] >= 0 if len(self.historique) > 0 else False)
+        self.adhesionEnCours = (self.historique[0] >= 0)
         if (not self.ancienAdherent) and self.statut == 'RNV':
             self.noter(" * ERROR_"+self.statut+":",
                   "Pas d'adhérent·e trouvé·e dans notre base de donnée avec ce nom, ce prénom et cette date de naissance.")
             self.noter(self.nom,self.prenom,self.dateNaissance)
             self.erreur += 1
-        return self
+        return
 
     def completerInfoPlusRecentes(self,toutesLesAdhesions,ecraser=False):
         indice = self.derniereSaison['indice']
