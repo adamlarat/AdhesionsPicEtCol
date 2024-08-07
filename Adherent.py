@@ -227,8 +227,8 @@ class Adherent:
         if(self.dateCertif == ''):
             self.dateCertif = '01/01/1970'
         ### Modification des adresses pour le téléchargement des documents joints
-        self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
-        self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+        #self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+        #self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         return
 
     def formaterPourExport(self):

@@ -5,6 +5,7 @@
   setlocale(LC_CTYPE, "fr_FR.UTF-8");
   $logsCree    = false;
   $fichierJson = $argv[1];
+  $scriptsDir  = $argv[2];
   $pythonData  = file_get_contents($fichierJson);
   $chemins     = pathinfo($fichierJson);
   $dossierLogs = $chemins['dirname']."/";
@@ -37,7 +38,13 @@
     echo(date("His")." : "."Script Python \n");
     /* Exécution du script python */
     $output = array();
-    exec("export HOME=$www_data_home && source venv/bin/activate && python3 notifications-helloasso.py ".$fichierJson." 2>&1",$output);
+    $commandePython="export HOME=$www_data_home && ".$scriptsDir."/venv/bin/python3 ".$scriptsDir."/notifications-helloasso.py ".$fichierJson." 2>&1";
+    /*
+    echo $commandePython."\n";
+    echo getcwd()."\n";
+    echo $scriptsDir."\n";
+    */
+    exec($commandePython, $output);
     /* Output de python dans les logs */
     foreach ($output as $line) {
       fwrite($logs,$line."\n"); 
