@@ -50,10 +50,12 @@ chemins = {
     'dossierAdhesions'       : dossierAdhesions,
     'adhesionsEnCoursODS'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".ods",
     'adhesionsEnCoursCSV'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".csv",
+    'dossierCM'              : dossierAdhesions+'CertificatsMedicaux/',
     'dossierATraiter'        : dossierATraiter,
     # 'Telechargements'        : dossierAdhesions+'CertificatsMedicaux/'
     'Telechargements'        : dossierAdhesions+'Telechargement_'+saison,
 }
+io.verifierDossier(chemins['dossierCM'])
 io.verifierDossier(chemins['dossierATraiter'])
 io.verifierDossier(chemins['Telechargements'])
 
@@ -103,7 +105,7 @@ adhesionsEnCours = []
 erreurEnCours = 0
 for i in range(1,Nb_enCours+1):
     adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
-    erreur = adherent.verifierAdhesionEnCours()
+    erreur = adherent.verifierAdhesionEnCours(chemins['dossierCM'])
     if erreur > 0:
         print(adherent.messageErreur)
     adhesionsEnCours += (adherent,)
