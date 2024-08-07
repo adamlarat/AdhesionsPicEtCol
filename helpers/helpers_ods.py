@@ -2,6 +2,7 @@
 """
 Fonction pour gerer les fichiers ods
 """
+import os
 
 
 # --------------------------------------------------------------------------- #
@@ -49,19 +50,7 @@ def read_ods_file(file_path) -> pd.DataFrame:
     """
     try:
         # Read the ODS file
-        df = pd.read_excel(file_path, engine='odf')
-
-        # Display basic information about the dataframe
-        print(f"Successfully read file: {file_path}")
-        print(f"Number of rows: {len(df)}")
-        print(f"Number of columns: {len(df.columns)}")
-        print("\nColumn names:")
-        print(df.columns.tolist())
-
-        # Display the first few rows
-        print("\nFirst few rows of the data:")
-        print(df.head())
-        return df
+        return pd.read_excel(file_path, engine='odf')
     except Exception as e:
         print(f"Error reading file {file_path}: {str(e)}")
         return None
@@ -90,13 +79,13 @@ class ODSDocument:
         self.connect()
 
     def connect(self):
-        try:
-            existing_sheets = pd.read_excel(self.path, engine="odf", sheet_name=None)
-            self.sheets = {name: df for name, df in existing_sheets.items()}
-        except FileNotFoundError:
-            pass  # Le fichier n'existe pas encore, ce n'est pas une erreur
-        except Exception as e:
-            raise OdsConnectException(f" * ERREUR : pas de connexion possible à {self.path}\n{str(e)}")
+        if os.path.exists(self.path):
+            try:
+                existing_sheets = pd.read_excel(self.path, engine="odf", sheet_name=None)
+                self.sheets = {name: df for name, df in existing_sheets.items()}
+            except Exception as e:
+                raise OdsConnectException(f" * ERREUR : pas de connexion possible à {self.path}\n{str(e)}")
+        return
 
     def add_data_to_sheet(self, sheet_name: str, data: dict):
         if sheet_name not in self.sheets:
@@ -111,6 +100,13 @@ class ODSDocument:
         )
         return
 
+    def replace_data_in_sheet(self, sheet_name: str, data: dict, row_index: int):
+        if not (sheet_name in self.sheets):
+            print("ERREUR: on doit ecraser une entree mais je ne trouve pas la feuille de donnees")
+            self.sheets[sheet_name] = pd.DataFrame()
+        self.sheets[sheet_name].iloc[row_index-1] = pd.Series(data)
+        return
+
 
     def save(self):
         try:
@@ -121,17 +117,6 @@ class ODSDocument:
             raise OdsSaveError(f" * ERREUR : impossible d'enregistrer le document {self.path}\n{str(e)}")
         print(f"A bien ecrit {self.path}")
         return
-
-
-# def create_doc(path: str) -> ODSDocument:
-#     doc = ODSDocument(path)
-#     return doc
-
-# def append_row_to_sheet(pd_sheet: pd.DataFrame, data: Any):
-#     print("data: {}".format(data))
-#     new_row = pd.DataFrame([data])
-#     print("new_row: {}".format(data))
-#     return pd.concat([pd_sheet, new_row], ignore_index=True)
 
 
 if __name__ == "__main__":

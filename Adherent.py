@@ -155,7 +155,7 @@ class Adherent:
       ligne=0,
       json={},
       afficherErreur=True,
-      chemins: dict = {},
+      chemins: dict = {}
     ):
 
         # Les entrees de ce logger doivent se retrouver dans le meme fichier log
@@ -227,6 +227,11 @@ class Adherent:
         """ Élements communs d'affichage des données """
         self.noter("Adhérent·e : "+self.prenom+" "+self.nom+"  "+self.statut)
 
+        # si renouvellement pour cette deja effectuee mais on recommence par ce que
+        # pas ok
+        self.on_recommence_rnv = False
+        return
+
     def set_attributes_from_data(self, attribut: str, valeur) -> None:
       """
       Wrap setting attribute with given value with some processing
@@ -273,7 +278,7 @@ class Adherent:
         self.ville         = self.ville.title()
         self.telephone     = mf.format_tel(self.telephone)
         self.email         = self.email.lower()
-        self.numLicence    = re.sub(r'[^0-9]','',self.numLicence)
+        self.numLicence    = re.sub(r'[^0-9]','',str(self.numLicence))
         self.typeAdhesion  = mf.typeAdhesion(self.typeAdhesion)
         self.statut        = mf.statut(self.statut)
         self.clubLicence   = self.clubLicence.replace(' ','-')
@@ -300,7 +305,14 @@ class Adherent:
             self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
         return
 
-    def trouveAdhesion(self,adhesionsOld,nom='',prenom='',dateNaissance='',inverse=True):
+    def trouveAdhesion(
+      self,
+      adhesionsOld: dict,
+      nom='',
+      prenom='',
+      dateNaissance='',
+      inverse=True
+    ):
         """ Cette fonction permet de rechercher un adhérent à partir de
         * son nom
         * son prénom
@@ -405,8 +417,9 @@ class Adherent:
                     self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
-        self.adhesionEnCours = (self.historique[0] >= 0)
+        self.adhesionEnCours = not (len(self.historique) > 0 and self.historique[0] >= 0)
         if (not self.ancienAdherent) and self.statut == 'RNV':
+            __import__('pdb').set_trace()
             self.noter(" * ERROR_"+self.statut+":",
                   "Pas d'adhérent·e trouvé·e dans notre base de donnée avec ce nom, ce prénom et cette date de naissance.")
             self.noter(self.nom,self.prenom,self.dateNaissance)
@@ -436,9 +449,11 @@ class Adherent:
         return self
 
 
-    def mettreAJour(self,toutesLesAdhesions):
+    def mettreAJour(self,toutesLesAdhesions: list):
 
         if not self.ancienAdherent:
+            return
+        if len(toutesLesAdhesions) == 0:
             return
 
         indice = self.derniereSaison['indice']
@@ -568,6 +583,7 @@ class Adherent:
                     self._debug_logger.error(erreur)
                     self._debug_logger.error(self.derniereSaison)
                     self._debug_logger.error(chemins)
+                    __import__('pdb').set_trace()
                     self.noter(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
                     self.noter(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
                     self.noter(' * Raison : ',erreur)
