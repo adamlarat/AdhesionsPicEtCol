@@ -16,14 +16,13 @@ Le dossier d'adhésions doit ressembler à ça : `user@machine: ~/.../Adhesions$
 
 * `Emails/liste_emails.txt` : liste des emails concernés par l'envoi du résumé du travail. Un par ligne.
 
-3. Avoir `python3 >= 3.8` installé sur sa machine
-4. Installer `pylocalc` :
+3. Avoir `python3 >= 3.8` installé sur sa machine.
 
-* Support python pour Libreoffice : `sudo apt install libreoffice-script-provider-python`
-* La commande `python3 -m uno` ne devrait renvoyer aucune erreur
-* Installer `pylocalc` : `sudo pip3 install pylocalc`
+4. Installer l'environment virtuel python avec poetry en lancant le script `install_python_env.sh`
 
-5. Installer les dépendances python : `sudo pip3 install numpy unidecode wget markdow beautifulsoup4` Attention, ces modules python doivent être accessibles à tous les utilisateurs, en particulier www-data !
+# Note (ancien commentaire de Adam avant utilisation de poetry)
+# Attention, ces modules python doivent être accessibles à tous les utilisateurs, en particulier www-data !
+
 6. Installer Java et le support Libreoffice\
    `sudo apt install default-jdk libreoffice-script-provider-python`
 
