@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Sat Nov 20 10:21:01 2021
@@ -202,7 +202,8 @@ def chargerToutesLesAdhesions(
                 'ddn':ddn,
                 'tableau':adhesions_np,
                 'fichier':_fichier_adhesion,
-                'dossierCM':chemins['dossierCM'].replace(saison0,saison)
+                'dossierCM':chemins['dossierCM'].replace(saison0,saison),
+                'Telechargements':chemins['Telechargements'].replace(saison0,saison),
             },
 
         if only_current_season:

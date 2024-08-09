@@ -7,7 +7,7 @@
   <body>
     <?php
       include 'common.php';
-      echo("Hi there!\n");
+      echo("Hi there! <br/>\n New version ! <br/>\n");
       setlocale(LC_CTYPE, "fr_FR.UTF-8");
       $date      = date("Ymd-His");
       $prenom    = "Inconnu";
@@ -56,7 +56,10 @@
               if (empty($output)) {
                 exec("screen -dmS ".$screenId);
               }
-              exec("screen -X -S ".$screenId." stuff \"php -f asynchronous.php ".$fichierJson." > ".$screenLogs." 2>&1;^M\"");
+              $commande = "screen -X -S ".$screenId." stuff \"php -f ".getcwd()."/asynchronous.php ".$fichierJson." ".getcwd()." > ".$screenLogs." 2>&1;^M\"";
+              $output = array();
+              // exec("screen -X -S ".$screenId." stuff \"php -f ".getcwd()."/asynchronous.php ".$fichierJson." > ".$screenLogs." 2>&1;^M\"");
+              exec($commande, $output);
             }
           }
         }

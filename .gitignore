@@ -11,13 +11,14 @@
 *.png
 CM/*
 __pycache__/*
+venv/*
 .spyproject/*
 *.txt
 Essais/*
 Telechargements/*
-Logs/*
+Logs*
 Emails/*
-CoffreFort/*
+CoffreFort*
 nextcloudRescan.sh
 Dumps/*
 convert*.php

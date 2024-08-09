@@ -21,7 +21,7 @@
     <tbody>
       <?php
         if(!empty($_POST)){
-          $command = "poetry run python monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
+          $command = "venv/bin/python3 monadhesion.py \"NOM=".$_POST['nom']."\" \"PRENOM=".$_POST['prenom']."\" \"DDN=".$_POST['ddn'].'"';
           $output  = array();
           exec($command,$output);
           echo "<br/>\n<div id=reponse>\n";

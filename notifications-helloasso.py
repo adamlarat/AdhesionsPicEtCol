@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Sep 13 10:30:23 2022
@@ -10,7 +10,6 @@ import myFunctions as mf
 import inputOutput as io
 import numpy as np
 from Adherent import Adherent
-from helpers import common_processing
 from datetime import datetime
 from typing import List
 
@@ -18,7 +17,7 @@ print(datetime.now().strftime("%H%M%S")," : ","Début…")
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir la notification sous forme de fichier JSON !")
-    print("Syntaxe: python notifications-helloasso.py jsonData")
+    print("Syntaxe: venv/bin/python3 notifications-helloasso.py jsonData")
     print("***** ATTENTION !!! ******")
     print()
     sys.exit(-1)
@@ -54,6 +53,7 @@ chemins = {
     'adhesionsEnCoursCSV'    : dossierAdhesions+"AdhesionsPicEtCol_"+saison+".csv",
     'dossierATraiter'        : dossierATraiter,
     'dossierCM'              : dossierAdhesions+"CertificatsMedicaux/",
+    # 'Telechargements'        : dossierAdhesions+'CertificatsMedicaux/'
     'Telechargements'        : dossierAdhesions+'Telechargement_'+saison,
 }
 io.verifierDossier(chemins['dossierATraiter'])
@@ -67,7 +67,6 @@ toutesLesAdhesions_full_historique: List[dict] = io.chargerToutesLesAdhesions(
 )
 if not len(toutesLesAdhesions_full_historique) > 0:
     print("ERROR: lhistorique des saison precendente n'est pas construit")
-    __import__('pdb').set_trace()
 toutesLesAdhesions_saison_courante: List[dict] = io.chargerToutesLesAdhesions(
     chemins,
     only_current_season=True
@@ -84,7 +83,7 @@ for entree in jsonData['data']['items']:
     """ Création de l'adhérent·e à partir du fichier JSON"""
     nouvo = Adherent(json=entree)
     ### Le format des notifications est différent. La date n'est pas accessible dans jsonData['data']['items'][0]
-    nouvo.dateInscription = common_processing.verifierDate(date_notification)
+    nouvo.dateInscription = mf.verifierDate(date_notification)
     ### Vérifie que le tarif correspond bien au statut et à la licence demandée
     nouvo.verifierTarif()
     ### Construit l'historique de l'adhérent·e, à partir de nom, prénom, ddn
