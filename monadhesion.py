@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 18 15:18:21 2022
@@ -11,7 +11,6 @@ import inputOutput as io
 from Adherent import Adherent
 import sendMail as sm
 
-from helpers import common_processing
 nom=""
 prenom=""
 ddn=""
@@ -19,7 +18,7 @@ ddn=""
 if len(sys.argv) < 2:
     print("***** ATTENTION !!! ******")
     print("Vous devez fournir au moins un des trois arguments !")
-    print("Syntaxe: python monadhesion.py NOM=monNom PRENOM=monPrenom DDN=maDateDeNaissance")
+    print("Syntaxe: venv/bin/python3 monadhesion.py NOM=monNom PRENOM=monPrenom DDN=maDateDeNaissance")
     print("***** ATTENTION !!! ******")
     print()
     sys.exit(-1)
@@ -38,7 +37,7 @@ else:
                 print("Le prenom renseigné n'est pas valide: ",valeur)
                 sys.exit(-1)
         elif variable.upper() == "DDN":
-            ddn=common_processing.verifierDate(valeur.strip(),errorOut=False)
+            ddn=verifierDate(valeur.strip(),errorOut=False)
             if ddn == '':
                 print("La date de naissance renseignée n'est pas valide: ",valeur)
                 sys.exit(-1)

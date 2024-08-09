@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3/
 # -*- coding: utf-8 -*-
 """
 Created on Thu Nov 18 17:12:56 2021
@@ -14,14 +14,12 @@ Created on Thu Nov 18 17:12:56 2021
         self.*
 """
 import myFunctions as mf
-from helpers import common_processing
 import inputOutput as io
 import numpy as np
 import wget, os, shutil
 import re
 from datetime import datetime
 from typing import List, Dict, Any
-from helpers.common_processing import get_logger
 
 """
 On crée ici un dictionnaire qui relie les noms des attributs de la classe Adherent
@@ -160,7 +158,7 @@ class Adherent:
 
         # Les entrees de ce logger doivent se retrouver dans le meme fichier log
         # que celui set set par notifications-helloasso.py
-        self._debug_logger = get_logger(
+        self._debug_logger = mf.get_logger(
             terminal_output=True,
             in_logger_name=f"{datetime.now().strftime('%Y_%m_%d_%H%M%S')}",
           )
@@ -170,12 +168,16 @@ class Adherent:
                 Récupérations des données nécessaires, indiquée dans le
                 dictionnaire titreFSGT """
             for attribut in titreFSGT:
-              if attribut == "dateInscription":
-                # cet attribut est set par notifications-helloasso.py
-                continue
-              valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
-              self.set_attributes_from_data(attribut, valeur)
-
+                if attribut == "dateInscription":
+                  # cet attribut est set par notifications-helloasso.py
+                  continue
+                valeur = mf.getEntry(adhesions,ligne,titreFSGT[attribut])
+                if type(valeur) == str:
+                    valeur = valeur.strip()
+                if 'date' in attribut:
+                    setattr(self,attribut,mf.verifierDate(valeur))
+                else:
+                    setattr(self, attribut, valeur)
             """ Autres données récupérées depuis HelloAsso """
             self.lienLicence   = mf.getEntry(adhesions,ligne,'LIEN_LICENCE')
             self.clubLicence   = mf.getEntry(adhesions,ligne,'CLUB_LICENCE')
@@ -187,14 +189,16 @@ class Adherent:
                 Récupérations des données nécessaires, indiquées dans le
                 dictionnaire jsonToObject """
             for attribut in jsonToObject:
-              if attribut == "dateInscription":
-                # cet attribut est set par notifications-helloasso.py
-                continue
-              valeur = mf.fromJson(json,jsonToObject[attribut])
-
-              self.set_attributes_from_data(attribut, valeur)
-              self._debug_logger.info(f"{attribut}: {valeur}")
-
+                if attribut == "dateInscription":
+                  # cet attribut est set par notifications-helloasso.py
+                  continue
+                valeur = mf.fromJson(json,jsonToObject[attribut])
+                if type(valeur) == str:
+                    valeur = valeur.strip()
+                if 'date' in attribut:
+                    setattr(self, attribut, mf.verifierDate(valeur))
+                else:
+                    setattr(self, attribut, valeur)
             """ Formater les données """
             ### l'API HelloAsso envoie les tarifs en centimes
             self.tarif = self.tarif//100
@@ -209,7 +213,7 @@ class Adherent:
             """ Puis indiquer nom, prénom et date de naissance"""
             self.nom           = nom.strip()
             self.prenom        = prenom.strip()
-            self.dateNaissance = common_processing.verifierDate(dateNaissance.strip())
+            self.dateNaissance = mf.verifierDate(dateNaissance.strip())
             """ Si True, alors les notifications seront affichées à l'écran.
             Si False, elles seront uniquement stockés dans la chaine de caractères
             self.messageErreur """
@@ -239,7 +243,7 @@ class Adherent:
       if type(valeur) == str:
         valeur = valeur.strip()
       if 'date' in attribut:
-        setattr(self,attribut,common_processing.verifierDate(valeur))
+        setattr(self,attribut,mf.verifierDate(valeur))
         self._debug_logger.debug(f"{valeur} -> {getattr(self, attribut)}")
       else:
         setattr(self, attribut, valeur)
@@ -285,8 +289,8 @@ class Adherent:
         if(self.dateCertif == ''):
             self.dateCertif = '01/01/1970'
         ### Modification des adresses pour le téléchargement des documents joints
-        self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
-        self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+        #self.lienLicence   = self.lienLicence.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
+        #self.lienCertif    = self.lienCertif.replace('www.helloasso.com','stockagehelloassoprod.blob.core.windows.net')
         print("self.dateCertif: {}".format(self.dateCertif))
         return
 
@@ -419,7 +423,6 @@ class Adherent:
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
         self.adhesionEnCours = not (len(self.historique) > 0 and self.historique[0] >= 0)
         if (not self.ancienAdherent) and self.statut == 'RNV':
-            __import__('pdb').set_trace()
             self.noter(" * ERROR_"+self.statut+":",
                   "Pas d'adhérent·e trouvé·e dans notre base de donnée avec ce nom, ce prénom et cette date de naissance.")
             self.noter(self.nom,self.prenom,self.dateNaissance)
@@ -583,7 +586,6 @@ class Adherent:
                     self._debug_logger.error(erreur)
                     self._debug_logger.error(self.derniereSaison)
                     self._debug_logger.error(chemins)
-                    __import__('pdb').set_trace()
                     self.noter(' * ERROR_'+self.statut+': Certificat Médical Manquant !')
                     self.noter(' * Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom)
                     self.noter(' * Raison : ',erreur)
