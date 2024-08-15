@@ -594,10 +594,16 @@ class Adherent:
                     self.dateCertif = '01/01/1970'
                     return
             else:
-                fileName = wget.download(self.lienCertif,bar=None)
-                root,ext = os.path.splitext(fileName)
-                newFile  = telechargements+'Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom+ext
-                os.rename(fileName,newFile)
+                success, erreur = mf.download_file_with_cookies(
+                    url=self.lienCertif,
+                    cookie_file=chemins['cookies'],
+                    output_file=telechargements+'Certif_'+Annee+Mois+Jour+'_'+self.prenom+'_'+self.nom,
+                )
+                if not success:
+                    self.erreur += 1
+                    self.noter(erreur)
+
+
             self.verifierDateCertif()
             return
 
@@ -665,7 +671,7 @@ class Adherent:
                         self.erreur += 1
                         return 'Document trouvé mais ne correspond pas au statut : '+fname
         self.erreur += 1
-        str_err = 'Aucun document trouvé pour '+self.prenom+' '+self.nom + f"dans {oldCertifDir}"
+        str_err = 'Aucun document trouvé pour '+self.prenom+' '+self.nom + f" dans {oldCertifDir}"
         return str_err
 
     def exportAttribut(self,attribut):

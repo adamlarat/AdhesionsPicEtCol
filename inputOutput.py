@@ -395,6 +395,13 @@ def export(
 
 def listesDiffusions(nvllesAdhesions, chemins):
     for nvlleAdhesion in nvllesAdhesions:
+        if nvlleAdhesion.on_recommence_rnv is True:
+            # pas besoin d'envoyer de mail
+            print(
+                f"Je nenvoit pas de mail pour {nvlleAdhesion.prenom} " +
+                f"{nvlleAdhesion.nom} car on refait ladhesion"
+            )
+            continue
         ### Modif le 2022.10.20. Faut faire la requête pour tt le monde
         ### À cause du nettoyage d'automne
         #if not nvlleAdhesion.ancienAdherent:
@@ -460,6 +467,11 @@ def mailAdherent(nvllesAdhesions,chemins):
     footer       = "\n\n".join([x.string for x in divs["footer"].findAll('p')])
     text         = headerPlain+fonctionnement+footer
     for nvlleAdhesion in nvllesAdhesions:
+
+        if nvlleAdhesion.on_recommence_rnv is True:
+            # pas besoin d'envoyer de mail
+            continue
+
         ### Gestion du style HTML personalisé
         ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître.
         nouvo      = ''
@@ -792,6 +804,7 @@ if __name__ == '__main__':
         'mailAdherent'           : 'CoffreFort/mailAdherent.html',
         'fonctionnementPicEtCol' : 'CoffreFort/fonctionnementPicEtCol.md',
         'loginContact'           : mf.myLogin("CoffreFort/login_contact.txt"),
+        'cookies' : 'CoffreFort/cookies.txt',
         'erreurExport'           : '',
         'dossierLogs'            : 'Logs/'
     }

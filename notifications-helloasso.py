@@ -45,6 +45,7 @@ chemins = {
     'listeEmails'            : "CoffreFort/liste_emails.txt",
     'mailAdherent'           : 'CoffreFort/mailAdherent.html',
     'fonctionnementPicEtCol' : 'CoffreFort/fonctionnementPicEtCol.md',
+    'cookies' : 'CoffreFort/cookies.txt',
     'parametresRobot'        : mf.myLogin("CoffreFort/parametresRobot.txt"),
     'loginContact'           : mf.myLogin("CoffreFort/login_contact.txt"),
     'loginAPI'               : mf.myLogin("CoffreFort/login_api_helloasso.txt"),

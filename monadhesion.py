@@ -50,7 +50,8 @@ chemins = {
     'saison'              : saison,
     'adhesionsEnCoursCSV' : "../"+saison+"/AdhesionsPicEtCol_"+saison+".csv",
     'dossierCM'           : '../'+saison+'/CertificatsMedicaux/',
-    'loginContact'        : mf.myLogin('CoffreFort/login_contact.txt')
+    'loginContact'        : mf.myLogin('CoffreFort/login_contact.txt'),
+    'cookies' : 'CoffreFort/cookies.txt',
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 

@@ -47,7 +47,8 @@ chemins = {
     'parametresRobot'     : mf.myLogin("CoffreFort/parametresRobot.txt"),
     'loginContact'        : mf.myLogin("CoffreFort/login_contact.txt"),
     'listeEmails'         : "CoffreFort/liste_emails.txt",
-    'loginAPI'            : mf.myLogin("CoffreFort/login_api_helloasso.txt")
+    'loginAPI'            : mf.myLogin("CoffreFort/login_api_helloasso.txt"),
+    'cookies' : 'CoffreFort/cookies.txt',
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 

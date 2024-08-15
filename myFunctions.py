@@ -9,7 +9,11 @@ Created on Sat Nov 20 13:09:03 2021
 import re
 from datetime import date,datetime
 import warnings
-from typing import Optional
+from typing import Optional, Tuple
+import requests
+import os
+import urllib.parse
+import re
 
 """ *************************** """
 """ MANIPULATION DES TABLES """
@@ -378,6 +382,89 @@ def get_logger(
         # )
         pass
     return logger
+
+
+
+def download_file_with_cookies(
+    url: str,
+    cookie_file: str,
+    output_file: str
+) -> Tuple[bool, str]:
+    """
+    Fonction pour telecharger des documents du formulaire helloasso
+    avec des cookies pour avoir les droits
+    """
+    def load_cookies_from_file(filename):
+        try:
+            with open(filename, 'r') as f:
+                cookie_string = f.read().strip()
+
+            cookies = {}
+            for item in cookie_string.split('; '):
+                if '=' in item:
+                    key, value = item.split('=', 1)
+                    cookies[key] = value
+            return cookies
+        except FileNotFoundError:
+            print(f"Cookie file '{filename}' not found.")
+            return None
+        except Exception as e:
+            print(f"Error reading cookie file: {str(e)}")
+            return None
+
+    def get_file_extension(cd):
+        if not cd:
+            return None
+        fname = re.findall('filename=(.+)', cd)
+        if len(fname) == 0:
+            return None
+        if '.' not in fname[0]:
+            return None
+        return fname[0].strip('"').split('.')[-1]
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+        "Referer": "https://www.helloasso.com/"
+    }
+
+    if not os.path.exists(cookie_file):
+        print(
+            "ERROR: le fichier avec le cookie n'est pas trouve. Le telechargement va " +
+            "surrement et le resultat sera une page hmtl disant que l'acces est refuse"
+        )
+        cookies = ""
+    else:
+        cookies = load_cookies_from_file(cookie_file)
+
+    try:
+        response = requests.get(url, headers=headers, cookies=cookies)
+        response.raise_for_status()
+
+        # on obtient l'extension du fichier
+        filename_ext = get_file_extension(
+            response.headers.get('Content-Disposition')
+        )
+        if not filename_ext:
+            try:
+                filename_ext = os.path.basename(urllib.parse.urlparse(url).path).split(".")[-1]
+            except Exception as ex:
+                filename_ext = None
+                print(ex)
+                pass
+
+        if not filename_ext:
+            filename_ext = 'pdf'
+
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+        output_file_with_ext = f"{output_file}.{filename_ext}"
+
+        with open(output_file_with_ext, "wb") as file:
+            file.write(response.content)
+        return True, f"File downloaded successfully to {output_file_with_ext}"
+
+    except requests.exceptions.RequestException as e:
+        return False, f"Failed to download. Error: {str(e)}"
 
 
 if __name__ == "__main__":
