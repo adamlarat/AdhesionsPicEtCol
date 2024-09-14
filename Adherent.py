@@ -127,8 +127,8 @@ jsonToObject = {
     'certifOK'        : '',
     'typeAdhesion'    : 'name',
     'tarif'           : 'amount',
+    'assurage'        : 'custom/Je sais assurer et grimper en tête en sécurité',
     'statut'          : "custom/Statut de l'inscription",
-    'assurage'        : '',
     'contactUrgence'  : "custom/Téléphone d'un contact",
     'initiations'  : "custom/Je participerai aux initiations",
     'animation_enfants'  : "custom/Je participerai à l'animation du créneau Enfants",
@@ -305,8 +305,14 @@ class Adherent:
             self.assurance     = 'EXT'      if self.statut == 'EXT' else 'OUI'
         if self.typeLicence == "":
             self.typeLicence   = 'EXT'      if self.statut == 'EXT' else 'SAIS' if self.statut == '4MS' else 'OMNI'
-        if self.assurage == '':
-            self.assurage      = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
+        if not hasattr(self, "assurage") or self.assurage == '':
+            self.assurage = 'Autonome' if self.statut == 'RNV' else 'Débutant·e'
+        else:
+          # convert boolean input from HelloAsso script to text
+            self.assurage = (
+              'Autonome' if self.assurage is True
+              else 'Débutant·e'
+            )
         return
 
     def trouveAdhesion(
