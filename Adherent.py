@@ -253,6 +253,7 @@ class Adherent:
         for arg in args:
             self.messageErreur += str(arg)
         self.messageErreur += "\n"
+        self._debug_logger.info("".join(args))
         if self.afficherErreur :
             print(*args)
         return
@@ -428,6 +429,7 @@ class Adherent:
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
         self.adhesionEnCours = not (len(self.historique) > 0 and self.historique[0] >= 0)
+        self._debug_logger.info(f" ancienAdherent: {self.ancienAdherent}")
         if (not self.ancienAdherent) and self.statut == 'RNV':
             self.noter(" * ERROR_"+self.statut+":",
                   "Pas d'adhérent·e trouvé·e dans notre base de donnée avec ce nom, ce prénom et cette date de naissance.")
