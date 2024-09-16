@@ -689,7 +689,7 @@ class Adherent:
     def exportAttribut(self,attribut):
         ### Ajouter des doubles quotes pour certains champs
         if attribut in ['nom','prenom','adresse','codePostal','ville','telephone','email']:
-            return '"'+getattr(self,attribut)+'"'
+            return '"'+str(getattr(self,attribut))+'"'
         if attribut == 'contactUrgence':
             return '"'+getattr(self,attribut)+'\t"'
         return getattr(self,attribut)
@@ -698,7 +698,7 @@ class Adherent:
         chaine = ''
         if form == 'FSGT':
             for attribut in list(titreFSGT)[2:24]:
-                chaine += self.exportAttribut(attribut)+';'
+                chaine += str(self.exportAttribut(attribut))+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
         elif form == 'elicence':
             chaine = ';'.join([str(getattr(self,attr)) for attr in importFSGT_elicence])
@@ -712,15 +712,13 @@ class Adherent:
                 chaine += item+" : "+self.exportAttribut(exportWeb[item])+"\n"
         else:
             for attribut in titreFSGT:
-                chaine += self.exportAttribut(attribut)+';'
+                chaine += str(self.exportAttribut(attribut))+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
         return chaine
 
     def toODS(self) -> Dict[str, Any]:
         data = {}
         for attribut in titreFSGT:
-            # if attribut == "tarif":
-            #   __import__('pdb').set_trace()
             _field_value = getattr(self, attribut)
             # if 'date' in attribut:
             #     _field_value = [mf.toLibreOfficeDate(_field_value)]

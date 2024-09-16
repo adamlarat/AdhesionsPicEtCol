@@ -10,7 +10,7 @@ import os
 
 def row_to_json(row):
     try:
-        tarif = 100 * row["TARIF"]
+        tarif = 100 * int(row["TARIF"])
     except Exception:
         tarif = row["TARIF"]
     data = {

@@ -32,7 +32,7 @@ from typing import List
 #     adhesions = remplacerTitresColonnes(adhesions)
 #     return adhesions
 
-SEND_EMAILS = False  # must be True when not debugging
+SEND_EMAILS = True  # must be True when not debugging
 
 def recupDonneesHelloAsso(chemins):
     """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso.
@@ -361,6 +361,7 @@ def export(
     for i in rnvAdhesions:
         assert i.adhesionEnCours is False
 
+
     for _list_adherents in [nvllesAdhesions, rnvAdhesions]:
         # Écriture dans le fichier ODS des adhésions en cours
         miseAJourAdhesionsEnCours(_list_adherents, chemins)
@@ -526,6 +527,7 @@ def mailRecapitulatif(
             message+= "Nouvelle adhésion\n"
         else:
             message+= "Nouvelles adhésions\n"
+        message+= nvllesAdhesions[0].toString() + "\n"
         for adherent in nvllesAdhesions:
             message += adherent.messageErreur
         message+= "*******************\n"
@@ -534,6 +536,7 @@ def mailRecapitulatif(
             message+= "Renouvellement d'adhésion\n"
         else:
             message+= "Renouvellements d'adhésions\n"
+        message+= nvllesAdhesions[0].toString() + "\n"
         message+= "*******************\n"
         for adherent in rnvAdhesions:
             message += adherent.messageErreur
