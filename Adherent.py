@@ -201,7 +201,11 @@ class Adherent:
                     setattr(self, attribut, valeur)
             """ Formater les données """
             ### l'API HelloAsso envoie les tarifs en centimes
-            self.tarif = self.tarif//100
+            try:
+              self.tarif = int(self.tarif)
+              self.tarif = self.tarif//100
+            except Exception:
+              pass
             self.formaterAttributs()
         else :
             """ Si non, initialiser à rien """
@@ -311,7 +315,7 @@ class Adherent:
         else:
           # convert boolean input from HelloAsso script to text
             self.assurage = (
-              'Autonome' if self.assurage is True
+              'Autonome' if self.assurage is True or 'Autonome' in self.assurage or 'Oui' in self.assurage or 'Yes' in self.assurage
               else 'Débutant·e'
             )
         return
@@ -697,7 +701,7 @@ class Adherent:
                 chaine += self.exportAttribut(attribut)+';'
             chaine = chaine[:-1] ### pour enlever le dernier ';'
         elif form == 'elicence':
-            chaine = ';'.join([getattr(self,attr) for attr in importFSGT_elicence])
+            chaine = ';'.join([str(getattr(self,attr)) for attr in importFSGT_elicence])
         elif form == 'HTML':
             chaine += "<ul>\n"
             for item in exportWeb:
@@ -715,6 +719,8 @@ class Adherent:
     def toODS(self) -> Dict[str, Any]:
         data = {}
         for attribut in titreFSGT:
+            # if attribut == "tarif":
+            #   __import__('pdb').set_trace()
             _field_value = getattr(self, attribut)
             # if 'date' in attribut:
             #     _field_value = [mf.toLibreOfficeDate(_field_value)]
