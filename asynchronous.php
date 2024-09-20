@@ -47,7 +47,7 @@
     exec($commandePython, $output);
     /* Output de python dans les logs */
     foreach ($output as $line) {
-      fwrite($logs,$line."\n"); 
+      fwrite($logs,$line."\n");
     }
 
     echo(date("His")." : "."Export CSV 2 \n");

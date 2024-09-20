@@ -9,13 +9,15 @@ Created on Sat Nov 20 10:21:01 2021
 import numpy as np
 import os, shutil,re
 import myFunctions as mf
-import pylocalc as pyods
+import pandas as pd
 import sendMail as sm
 import helloasso_api as hapi
 import glob as glob
 from markdown import markdown
 from bs4 import BeautifulSoup as html
 import datetime as dt
+from typing import List
+
 
 """ 2022.08.24. La procédure qui consiste à récuperer les données en CSV sur HelloAsso
     est obsolète. Cette fonction est amenée à disparaître """
@@ -30,8 +32,10 @@ import datetime as dt
 #     adhesions = remplacerTitresColonnes(adhesions)
 #     return adhesions
 
+SEND_EMAILS = False  # must be True when not debugging
+
 def recupDonneesHelloAsso(chemins):
-    """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso. 
+    """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso.
         On récupère les données au format JSON (dictionnaire Python)"""
     api    = hapi.HaApiV5(chemins['loginAPI'].api_base,
                           chemins['loginAPI'].client_id,
@@ -61,15 +65,16 @@ def recupDonneesHelloAsso(chemins):
     return data
 
 def formaterTable(adhesions):
-    """ Une fois les données récupérées dans un tableau numpy, on supprime 
-        les caractères inutiles et les lignes vides.    
+    """ Une fois les données récupérées dans un tableau numpy, on supprime
+        les caractères inutiles et les lignes vides.
     """
     nLines,nCols = np.shape(adhesions)
     supprLignes  = []
     for line in range(nLines):
         delete = True
         for col in range(nCols):
-            adhesions[line,col] = adhesions[line,col].replace('"','').strip()
+            if isinstance(adhesions[line,col], str):
+                adhesions[line,col] = adhesions[line,col].replace('"','').strip()
             delete = (delete and adhesions[line,col] == "")
         if delete:
             supprLignes += line,
@@ -134,73 +139,130 @@ def formaterTable(adhesions):
 #     return adhesions
 
 
-def chargerToutesLesAdhesions(chemins: dict) -> list:
+def chargerToutesLesAdhesions(
+    chemins: dict,
+    only_current_season: bool = False,
+) -> List[dict]:
     """ Cette fonction parcours tous les dossiers présents dans 'dossierAdhesions'
         par ordre décroissant des saisons (2021-2022, puis 2020-2021, etc...)
+        si :param: only_current_season is False sinon seulement la saison courante
         Tant qu'un fichier AdhesionsPicEtCol_${saison}.csv est trouvé, il est
         chargé en mémoire dans un tableau numpy.
         Cette fonction renvoie alors une liste de dictionnaires pour chaque saison."""
-    fichierAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
+    fichiercsvAdhesionsCourantes = chemins['adhesionsEnCoursCSV']
+    fichierodsAdhesionsCourantes = chemins['adhesionsEnCoursODS']
     saison                    = chemins['saison']
     saison0                   = saison
     toutesLesAdhesions = []
-    while os.path.exists(fichierAdhesionsCourantes):
-        adhesions_np = np.genfromtxt(fichierAdhesionsCourantes,delimiter=";",dtype=None,encoding="utf8")
-        if len(np.shape(adhesions_np)) == 1:
-            adhesions_np = adhesions_np[np.newaxis,:]
-        adhesions_np = formaterTable(adhesions_np)
-        noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
-                                    for nom in mf.getCol(adhesions_np,'NOM')])
-        prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
-                                    for prenom in mf.getCol(adhesions_np,'PRENOM')])
-        ddn = np.array([
-            dob.replace('"','').strip()
-            for dob in mf.getCol(adhesions_np,'NAISS')
-        ])
-        # Enregistrer les adhésions dans une structure adhoc
-        toutesLesAdhesions += {
-            'saison':saison,
-            'noms':noms,
-            'prenoms':prenoms,
-            'ddn':ddn,
-            'tableau':adhesions_np,
-            'fichier':fichierAdhesionsCourantes,
-            'dossierCM':chemins['dossierCM'].replace(saison0,saison)
-        },
-        # Reculer d'une saison
-        annee       = int(saison.split("-")[0])-1
-        nvlleSaison = str(annee)+"-"+str(annee+1)
-        fichierAdhesionsCourantes=fichierAdhesionsCourantes.replace(saison,nvlleSaison)
-        saison      = nvlleSaison
+
+    looked_current_season = False  # handle case of new season, file not created yet
+
+    while (
+        looked_current_season is False or
+        (
+            os.path.exists(fichiercsvAdhesionsCourantes)
+            or os.path.exists(fichierodsAdhesionsCourantes)
+        )
+    ):
+        looked_current_season = True
+
+        if os.path.exists(fichiercsvAdhesionsCourantes):
+            _fichier_adhesion = fichiercsvAdhesionsCourantes
+        elif os.path.exists(fichierodsAdhesionsCourantes):
+            _fichier_adhesion = fichierodsAdhesionsCourantes
+        else:
+            _fichier_adhesion = None
+
+        if _fichier_adhesion is not None:
+            if ".csv" in _fichier_adhesion:
+                adhesions_np = np.genfromtxt(_fichier_adhesion, delimiter=";", dtype=None, encoding="utf8")
+            else:
+                # pour la derniere saiso si je comprend bien il n'y a plus que le ods
+                # conversion des donnees pour avoir le meme format
+                adhesions_np = []
+                _df = pd.read_excel(_fichier_adhesion, engine='odf')
+                adhesions_np = np.vstack([_df.columns.to_numpy(), _df.to_numpy()])
+
+            if len(np.shape(adhesions_np)) == 1:
+                adhesions_np = adhesions_np[np.newaxis,:]
+            adhesions_np = formaterTable(adhesions_np)
+            noms = np.array([mf.supprimerCaracteresSpeciaux(nom.strip().upper())
+                                        for nom in mf.getCol(adhesions_np,'NOM')])
+            prenoms = np.array([mf.supprimerCaracteresSpeciaux(prenom.strip().title())
+                                        for prenom in mf.getCol(adhesions_np,'PRENOM')])
+            ddn = np.array([
+                dob.replace('"','').strip()
+                for dob in mf.getCol(adhesions_np,'NAISS')
+            ])
+            # Enregistrer les adhésions dans une structure adhoc
+            toutesLesAdhesions += {
+                'saison':saison,
+                'noms':noms,
+                'prenoms':prenoms,
+                'ddn':ddn,
+                'tableau':adhesions_np,
+                'fichier':_fichier_adhesion,
+                'dossierCM':chemins['dossierCM'].replace(saison0,saison),
+                'Telechargements':chemins['Telechargements'].replace(saison0,saison),
+            },
+
+        if only_current_season:
+            break
+        else:
+            # Reculer d'une saison
+            annee       = int(saison.split("-")[0])-1
+            nvlleSaison = str(annee)+"-"+str(annee+1)
+            fichiercsvAdhesionsCourantes=fichiercsvAdhesionsCourantes.replace(saison,nvlleSaison)
+            fichierodsAdhesionsCourantes=fichierodsAdhesionsCourantes.replace(saison,nvlleSaison)
+            saison      = nvlleSaison
+
     return toutesLesAdhesions
 
 def miseAJourAdhesionsEnCours(adherents,chemins):
     """ Cette fonction ouvre un document *.ods à l'aide de la librairie Pylocalc.
         Elle y insère toutes les données relatives aux adhérent·e·s
     """
+    if len(adherents) == 0:
+        return
     erreur = ''
-    ### Ouverture du document
     adhesionsEnCours = chemins['adhesionsEnCoursODS']
-    doc = pyods.Document(adhesionsEnCours)
+
+    from helpers import helpers_ods
+
     try:
-        doc.connect()
-    except:
-        erreur+=" * ERREUR : pas de connection possible à "+adhesionsEnCours+'\n'
-    sheet = doc['Adhesions_Adultes']
-    ### mise-à-jour des adhésions
-    for adherent in adherents:
-        sheet.append_row(adherent.toODS())
-    try:
+        # Ouverture du document
+        doc = helpers_ods.ODSDocument(adhesionsEnCours)
+        # mise-à-jour des adhésions
+        for adherent in adherents:
+
+            if adherent.on_recommence_rnv is True:
+                print(f"Je remplace la ligne {adherent.historique[0]} dans les adhesions de cette annee")
+                # on remplace les donnees
+                doc.replace_data_in_sheet(
+                    "Adhesions_Adultes",
+                    adherent.toODS(),
+                    adherent.historique[0],
+                )
+            else:
+                # nouvelle ligne
+                doc.add_data_to_sheet("Adhesions_Adultes", adherent.toODS())
+
         doc.save()
-    except:
-        erreur+=" * ERREUR : impossible d'enregistrer le document "+adhesionsEnCours+'\n'
-    try:
-        doc.close()
-    except:
-        erreur+=" * ERREUR : le document "+adhesionsEnCours+" ne s'est pas fermé correctement\n"
+
+    except helpers_ods.OdsConnectException as ex:
+        print("erreur: {}".format(str(ex)))
+        erreur += str(ex)
+    except helpers_ods.OdsSaveError as ex:
+        print("erreur: {}".format(str(ex)))
+        erreur += str(ex)
+    except Exception as ex:
+        print("erreur: {}".format(str(ex)))
+        erreur += str(ex)
 
     os.system("ps aux  | grep soffice.bin | grep headless | awk {'print $2'} | xargs kill -9")
     chemins['erreurExport'] += erreur
+
+    return
 
 def fichierImportBaseLicence(chemins):
     """ Retourne le nom du fichier d'import pour le serveur de licence FSGT.
@@ -221,9 +283,12 @@ def fichierImportBaseLicence(chemins):
         lot += 1
         filename = 'fichier_import_base_licence_'+chemins['saison']+'_Lot%02i.csv'%lot
         try:
-            fp       = open(chemins['dossierATraiter']+filename,"w")
-            fp.close()
-        except:
+            # fp       = open(chemins['dossierATraiter']+filename,"w")
+            # fp.close()
+            if os.path.exists(chemins['dossierATraiter']+filename):
+                os.remove(chemins['dossierATraiter']+filename)
+            pd.DataFrame().to_csv(chemins['dossierATraiter'])
+        except Exception as _:
             erreur += " * Erreur : échec à la création de "+chemins['dossierATraiter']+filename+"\n"
     else : ### On a trouvé plusieurs fichiers d'import dans dossierATraiter
         print(" * INFO : Plusieurs fichiers 'fichier_import_base_licence_*.csv' ont été trouvé dans le dossier "+chemins['dossierATraiter'])
@@ -245,73 +310,132 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
     """
     erreur = ''
     chemins = fichierImportBaseLicence(chemins)
-    for nvlleAdhesion in nvllesAdhesions:
-        fichier       = False
-        if nvlleAdhesion.erreur >0:
+    for _nvlleAdhesion in nvllesAdhesions:
+        liste_chemins_ecriture: List[str] = []
+        if _nvlleAdhesion.erreur > 0:
+            liste_chemins_ecriture.append(chemins['erreurs.csv'])
+
+        # on devrait avoir a ne pas importer de fichier pour les renouvellements
+        if not _nvlleAdhesion.statut == 'RNV':
+            if _nvlleAdhesion.statut == 'MUT':
+                if (
+                        "NON" in _nvlleAdhesion.licenceOK
+                        or "EXT" in _nvlleAdhesion.licenceOK
+                ):
+                    liste_chemins_ecriture.append(chemins['mutations.csv'])
+            elif not _nvlleAdhesion.statut == 'EXT':
+                if "NON" in _nvlleAdhesion.licenceOK:
+                    liste_chemins_ecriture.append(chemins['fichierImport'])
+
+        for _csv_file in liste_chemins_ecriture:
             try:
-                fichier = open(chemins['erreurs.csv']  ,'a')
-            except:
-                erreur += " * Erreur : échec à l'ouverture de "+chemins['erreurs.csv']+"\n"
-        elif nvlleAdhesion.statut == 'MUT':
-            try:
-                fichier = open(chemins['mutations.csv'],'a')
-            except:
-                erreur += " * Erreur : échec à l'ouverture de "+chemins['mutations.csv']+"\n"
-        elif not(nvlleAdhesion.statut == 'EXT'):
-            try:
-                fichier = open(chemins['fichierImport'],'a')
-            except:
-                erreur += " * Erreur : échec à l'ouverture de "+chemins['fichierImport']+"\n"
-        if fichier:
-            #print(nvlleAdhesion.toString("FSGT"), file=fichier)
-            print(nvlleAdhesion.toString("elicence"), file=fichier)
-            fichier.close()
+                print("_csv_file: {}".format(_csv_file))
+                if os.path.exists(_csv_file):
+                    _df_to_save = pd.concat([
+                        pd.read_csv(_csv_file),
+                        pd.DataFrame(_nvlleAdhesion.to_FSGT_import_row(), index=[0])
+                    ], ignore_index=True)
+                    _df_to_save.drop_duplicates(subset=["nom", "prenom", "date-de-naissance"], inplace=True)
+                    _df_to_save.to_csv(_csv_file, index=False)
+                else:
+                    pd.DataFrame(
+                        _nvlleAdhesion.to_FSGT_import_row(), index=[0]
+                    ).reset_index(drop=True).to_csv(_csv_file, index=False)
+            except Exception as ex:
+                print(f" * Erreur : échec à l'ecriture de {_csv_file} {str(ex)}")
+                erreur += f" * Erreur : échec à l'ecriture de {_csv_file} {str(ex)}"
     chemins['erreurExport'] += erreur
     return chemins
 
-def export(nvllesAdhesions,adhesionsEnCours,chemins):
-    """ Cette fonction finalise le travail sur une notification HelloAsso :
+def export(
+    nvllesAdhesions: list,
+    adhesionsEnCours: list,
+    rnvAdhesions: list,
+    chemins: dict
+):
+    """
+    Cette fonction finalise le travail sur une notification HelloAsso :
         - Écriture dans les fichiers
             * {mutations|fichier_import_FSGT|erreurs}.csv
             * AdhesionsPicEtCol_saisonEnCours.ods
         - Inscrire sur les listes de diffusion, si nécessaire
         - Envoyer un mail de bienvenue/réinformatif
         - Récapituler le travail effectué par mail
+
+    :param nvllesAdhesions: Liste nouvelles adhesisons
+    :param adhesionsEnCours: Liste des adherents actuels
+    :param rnvAdhesions: Liste des adherents qui renouvellent dans cet
+        appel leur inscription
+    :param chemins:
     """
     # chaîne de caractères pour récupérer les erreurs lors de l'export
     chemins['erreurExport'] = ''
     print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture ODS ")
-    # Écriture dans le fichier ODS des adhésions en cours
-    miseAJourAdhesionsEnCours(nvllesAdhesions,chemins)
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ")
-    # Écriture dans les fichiers FSGT
-    chemins = ecrireFichiersFSGT(nvllesAdhesions,chemins)
 
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ")
-    # Si jamais adhéré auparavant, inscrire sur la liste 'membres'
-    listesDiffusions(nvllesAdhesions,chemins)
+    for i in nvllesAdhesions:
+        assert i.adhesionEnCours is True
+    for i in rnvAdhesions:
+        assert i.adhesionEnCours is False
 
-    # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
-    # mail récapitulatif des infos de Pic&Col pour les autres
-    mailAdherent(nvllesAdhesions,chemins)
 
-    # Envoyer les logs par mail
-    mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins)
-    print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
+    for _list_adherents in [nvllesAdhesions, rnvAdhesions]:
+        # Écriture dans le fichier ODS des adhésions en cours
+        miseAJourAdhesionsEnCours(_list_adherents, chemins)
 
-def listesDiffusions(nvllesAdhesions,chemins):
+        print(dt.datetime.now().strftime("%H%M%S")," : ","Écriture CSV ")
+        # Écriture dans les fichiers FSGT
+        chemins = ecrireFichiersFSGT(_list_adherents, chemins)
+
+        print(dt.datetime.now().strftime("%H%M%S")," : ","Mails ")
+
+        if SEND_EMAILS is True:
+            # Si jamais adhéré auparavant, inscrire sur les listes mails
+            listesDiffusions(_list_adherents,chemins)
+
+    if SEND_EMAILS is True:
+        # Mail de bienvenue pour les nouvelles·aux adhérent·e·s,
+        # mail récapitulatif des infos de Pic&Col pour les autres
+        mailAdherent(nvllesAdhesions,chemins)
+        mailAdherent(_list_adherents,chemins)
+
+        # Envoyer les logs par mail
+        mailRecapitulatif(
+            nvllesAdhesions,
+            rnvAdhesions,
+            adhesionsEnCours,
+            chemins
+        )
+
+        print(dt.datetime.now().strftime("%H%M%S")," : ","Fin Export ")
+
+    return
+
+def listesDiffusions(nvllesAdhesions, chemins):
     for nvlleAdhesion in nvllesAdhesions:
+        if nvlleAdhesion.on_recommence_rnv is True:
+            # pas besoin d'envoyer de mail
+            print(
+                f"Je nenvoit pas de mail pour {nvlleAdhesion.prenom} " +
+                f"{nvlleAdhesion.nom} car on refait ladhesion"
+            )
+            continue
         ### Modif le 2022.10.20. Faut faire la requête pour tt le monde
         ### À cause du nettoyage d'automne
         #if not nvlleAdhesion.ancienAdherent:
-        sm.envoyerEmail(login=chemins['loginContact'],
-                        sujet='Commande sympa',
-                        pour='sympa@listes.picetcol38.fr',
-                        corps='ADD membres '+\
-                            nvlleAdhesion.email+' '+\
-                            nvlleAdhesion.prenom+' '+\
-                            nvlleAdhesion.nom,
-                        bcc='adam@larat.fr')
+        for _mailing_list in nvlleAdhesion.get_list_mailing_lists_to_subscribe():
+            sm.envoyerEmail(
+                login=chemins['loginContact'],
+                sujet='Commande sympa',
+                pour='sympa@listes.picetcol38.fr',
+                corps=(
+                    # TODO several subscribe in same mail ?
+                    f"ADD {_mailing_list} " +
+                    nvlleAdhesion.email + ' ' +
+                    nvlleAdhesion.prenom + ' ' +
+                    nvlleAdhesion.nom
+                ),
+                bcc='adam@larat.fr'
+            )
     return
 
 def nLignes(fichier):
@@ -360,6 +484,11 @@ def mailAdherent(nvllesAdhesions,chemins):
     footer       = "\n\n".join([x.string for x in divs["footer"].findAll('p')])
     text         = headerPlain+fonctionnement+footer
     for nvlleAdhesion in nvllesAdhesions:
+
+        if nvlleAdhesion.on_recommence_rnv is True:
+            # pas besoin d'envoyer de mail
+            continue
+
         ### Gestion du style HTML personalisé
         ### Ya trois paragraphes possibles pour l'en-tête. Un seul doit apparaître.
         nouvo      = ''
@@ -400,17 +529,33 @@ def mailAdherent(nvllesAdhesions,chemins):
                         html  = message,
                         bcc   = 'adam@larat.fr') # full HTML
 
-def mailRecapitulatif(nvllesAdhesions,adhesionsEnCours,chemins):
+def mailRecapitulatif(
+    nvllesAdhesions,
+    rnvAdhesions,
+    adhesionsEnCours,
+    chemins,
+):
     # Constitution du message de log et pour le mail
     message = ""
     message+= "*******************\n"
-    if len(nvllesAdhesions) == 1:
-        message+= "Nouvelle adhésion\n"
-    else:
-        message+= "Nouvelles adhésions\n"
-    message+= "*******************\n"
-    for adherent in nvllesAdhesions:
-        message += adherent.messageErreur
+    if len(nvllesAdhesions) > 1:
+        if len(nvllesAdhesions) == 1:
+            message+= "Nouvelle adhésion\n"
+        else:
+            message+= "Nouvelles adhésions\n"
+        message+= nvllesAdhesions[0].toString() + "\n"
+        for adherent in nvllesAdhesions:
+            message += adherent.messageErreur
+        message+= "*******************\n"
+    elif len(rnvAdhesions) > 1:
+        if len(nvllesAdhesions) == 1:
+            message+= "Renouvellement d'adhésion\n"
+        else:
+            message+= "Renouvellements d'adhésions\n"
+        message+= nvllesAdhesions[0].toString() + "\n"
+        message+= "*******************\n"
+        for adherent in rnvAdhesions:
+            message += adherent.messageErreur
 
     message+= "***********************************\n"
     message+= "Vérification des adhésions en cours\n"
@@ -506,8 +651,8 @@ def emptyDir(dirname):
 
 def verifierDossier(dirname):
     """ Si le dossier n'existe pas, le créer ! """
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
+    os.makedirs(os.path.dirname(dirname), exist_ok=True)
+    os.makedirs(dirname, exist_ok=True)
 
 """ 2022.09.21 : Procédure appelée par adhesionPicEtCol.py
     Amenée à disparaître """
@@ -678,6 +823,7 @@ if __name__ == '__main__':
         'mailAdherent'           : 'CoffreFort/mailAdherent.html',
         'fonctionnementPicEtCol' : 'CoffreFort/fonctionnementPicEtCol.md',
         'loginContact'           : mf.myLogin("CoffreFort/login_contact.txt"),
+        'cookies' : 'CoffreFort/cookies.txt',
         'erreurExport'           : '',
         'dossierLogs'            : 'Logs/'
     }

@@ -16,7 +16,7 @@
     <input type='text' placeholder='Date de naissance (JJ/MM/AAAA)' name="ddn" value="<?php echo $_GET["ddn"]; ?>" required/>
     <input type='submit' value="Obtenir mes informations"/>
   </form>
-  
+
   <table>
     <tbody>
       <?php

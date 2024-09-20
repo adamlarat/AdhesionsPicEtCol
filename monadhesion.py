@@ -37,26 +37,27 @@ else:
                 print("Le prenom renseigné n'est pas valide: ",valeur)
                 sys.exit(-1)
         elif variable.upper() == "DDN":
-            ddn=mf.verifierDate(valeur.strip(),errorOut=False)
+            ddn=verifierDate(valeur.strip(),errorOut=False)
             if ddn == '':
                 print("La date de naissance renseignée n'est pas valide: ",valeur)
                 sys.exit(-1)
         else:
             print("Nom de variable inconnu : ",variable.upper(),valeur,arg)
-        
+
 saison=mf.saison()
 
 chemins = {
     'saison'              : saison,
     'adhesionsEnCoursCSV' : "../"+saison+"/AdhesionsPicEtCol_"+saison+".csv",
     'dossierCM'           : '../'+saison+'/CertificatsMedicaux/',
-    'loginContact'        : mf.myLogin('CoffreFort/login_contact.txt')
+    'loginContact'        : mf.myLogin('CoffreFort/login_contact.txt'),
+    'cookies' : 'CoffreFort/cookies.txt',
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
 ### Trouver l'adhérent·e dans les anciens fichiers d'adhésions
 adherent = Adherent(nom=nom,prenom=prenom,dateNaissance=ddn,afficherErreur=False)
-adherent = adherent.construireHistorique(toutesLesAdhesions)
+adherent.construireHistorique(toutesLesAdhesions)
 
 ### Si l'historique n'est pas vide
 if adherent.ancienAdherent:
@@ -76,7 +77,7 @@ else:
     print("Prenom : "+prenom)
     print("Date de Naissance : "+ddn)
     sys.exit(-1)
-    
+
 # print("*************** MAIL ****************")
 # print("Historique = ",adherent.historique)
 # print("Ancient Adherent = ",adherent.ancienAdherent)
@@ -88,4 +89,3 @@ else:
 # print("PJ = ",adherent.documents)
 # print("Erreurs = ",adherent.messageErreur)
 # print("*************** MAIL ****************")
-

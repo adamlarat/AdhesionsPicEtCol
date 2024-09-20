@@ -17,8 +17,12 @@
       $logsCree  = false;
       $screenId  = date("YmdHis");
 
+      // Read JSON from php://input
       $jsonFile = file_get_contents("php://input");
+
+      // Decode JSON
       $jsonData = json_decode($jsonFile);
+
       if ($jsonData != false) {
         $event = $jsonData->eventType;
         if ($jsonData->eventType == "Order") {
@@ -30,7 +34,7 @@
             $nom    = strtoupper(supprimerCaracteresSpeciaux($data->items[0]->user->lastName));
             $event  = (count($data->items)==1)?"Membership":count($data->items)."Memberships";
             $logsName = $date."_".$prenom."_".$nom."_".$event;
-    
+
             /* Création du dossier de logs et backup */
             $dossierLogs    = "Logs/".$logsName."/";// "Logs/Static/"; //"Logs/".$logsName."/";
             $screenLogs     = $dossierLogs."screen.log";
@@ -47,7 +51,7 @@
               fwrite($logs,"La sauvegarde des données JSON a échoué !\n");
               fclose($logs);
             }
-            else {    
+            else {
               fclose($logs);
               /* Lancer une session screen si nécessaire */
               $screenId = "phpqueue";
@@ -61,9 +65,13 @@
               // exec("screen -X -S ".$screenId." stuff \"php -f ".getcwd()."/asynchronous.php ".$fichierJson." > ".$screenLogs." 2>&1;^M\"");
               exec($commande, $output);
             }
+          } else {
+            echo "Le json ne correspond pas a une entree Membership, je ne fait rien\n";
           }
+
         }
         else if ($jsonData->eventType == "Payment") {
+          echo "Le json correspond a un paiement, je ne fait rien !\n";
           /* On ne fait rien ! */
           $logsCree = True;
         }
@@ -82,5 +90,4 @@
       echo("    Everything is OK! Thank you!\n");
     ?>
   </body>
-<html>
-
+</html>

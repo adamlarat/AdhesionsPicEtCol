@@ -18,13 +18,13 @@ if len(sys.argv) < 3:
     print("Syntaxe: venv/bin/python3 adhesionsPicEtCol.py\
                     [PATH]/AdhesionsPicEtCol_saisonEnCours.ods\
                     [PATH]/dossierLogs"
-                        
+
     )
     print("***** ATTENTION !!! ******")
     print()
     sys.exit(
-        "Le fichier courant des adhésions ou\
-            le chemin vers le dossier de logs n'ont pas été fournis !"
+        "Le fichier courant des adhesions ou\
+            le chemin vers le dossier de logs n'ont pas ete fournis !"
     )
 else:
     # Nom du fichier courant des adhésions Pic&col
@@ -47,7 +47,8 @@ chemins = {
     'parametresRobot'     : mf.myLogin("CoffreFort/parametresRobot.txt"),
     'loginContact'        : mf.myLogin("CoffreFort/login_contact.txt"),
     'listeEmails'         : "CoffreFort/liste_emails.txt",
-    'loginAPI'            : mf.myLogin("CoffreFort/login_api_helloasso.txt")
+    'loginAPI'            : mf.myLogin("CoffreFort/login_api_helloasso.txt"),
+    'cookies' : 'CoffreFort/cookies.txt',
 }
 toutesLesAdhesions = io.chargerToutesLesAdhesions(chemins)
 
@@ -65,7 +66,7 @@ nb_deja = 0
 io.emptyDir(chemins['Telechargements'])
 ### Parcours de la liste téléchargées sur helloasso.com
 for entree in reversed(helloAsso_json):
-    adherent = Adherent(json=entree)
+    adherent = Adherent(json=entree, chemins=chemins)
     adherent.verifierTarif()
     adherent.construireHistorique(toutesLesAdhesions)
     adherent.mettreAJour(toutesLesAdhesions)
@@ -75,24 +76,24 @@ for entree in reversed(helloAsso_json):
         adherent.formaterPourExport()
         nvllesAdhesions += (adherent,)
         nb_nvo += 1
-    else: 
+    else:
         nb_deja += 1
 
 print("**************************************")
-print("Vérification des adhésions en cours...")
+print("Verification des adhesions en cours...")
 print("**************************************")
-""" Vérification des adhésions en cours """
+""" Verification des adhesions en cours """
 ### Nb d'adhésions en cours
 enCours_np = toutesLesAdhesions[0]['tableau']
 Nb_enCours = np.shape(enCours_np)[0]-1
 dejaAdherents = []
 nb_enCours = 0
 for i in range(1,Nb_enCours+1):
-    adherent = Adherent(adhesions=enCours_np,ligne=i)
+    adherent = Adherent(adhesions=enCours_np,ligne=i, chemins=chemins)
     adherent.verifierAdhesionEnCours(chemins['dossierCM'])
     dejaAdherents += (adherent,)
     nb_enCours += 1
-    
+
 compteurs = {
     'helloAsso' : nb_helloAsso,
     'nouveaux'  : nb_nvo,
