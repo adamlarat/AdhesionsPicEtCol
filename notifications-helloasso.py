@@ -190,15 +190,15 @@ else:
 
 adhesionsEnCours = []
 erreurEnCours = 0
-for i in range(1,Nb_enCours+1):
-    adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
-    erreur = adherent.verifierAdhesionEnCours(chemins["dossierCM"])
-    if erreur > 0:
-        print(adherent.messageErreur)
-    adhesionsEnCours += (adherent,)
-    erreurEnCours    += erreur
-if erreurEnCours == 0:
-    print("  Toutes les adhésions de cette annee sont nickels !")
+# for i in range(1,Nb_enCours+1):
+#     adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
+#     erreur = adherent.verifierAdhesionEnCours(chemins["dossierCM"])
+#     if erreur > 0:
+#         print(adherent.messageErreur)
+#     adhesionsEnCours += (adherent,)
+#     erreurEnCours    += erreur
+# if erreurEnCours == 0:
+#     print("  Toutes les adhésions de cette annee sont nickels !")
 
 print(datetime.now().strftime("%H%M%S")," : ","Export ")
 

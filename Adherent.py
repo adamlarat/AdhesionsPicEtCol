@@ -368,13 +368,13 @@ class Adherent:
                     self.noter(" * - Fichier                    :",adhesionsOld['fichier'])
                     self.noter(" * - Nouvelle date de naissance :",dateNaissance)
                     self.noter(" * - Ancienne date de naissance :",ddnOld[match[newMatch]][0])
-                    self.erreur += 1
+                    # self.erreur += 1
                 elif np.size(lastMatch) > 1:
                     self.noter(" * ERROR_"+self.statut+": j'ai trouvé", np.size(lastMatch),
                             'personnes appelées',nom,prenom,
                             'nées le',dateNaissance,
                             "dans le fichier ",adhesionsOld['fichier']," !")
-                    self.erreur += 1
+                    # self.erreur += 1
                 else:
                     ligne = match[newMatch[lastMatch]][0]
         if inverse and ligne < 0:
@@ -728,3 +728,31 @@ class Adherent:
             #   _field_value = [getattr(self, attribut).replace('"','').strip()]
             data[titreFSGT[attribut]] = _field_value
         return data
+
+    def to_FSGT_import_row(self) -> Dict[str, Any]:
+        """
+        Export cette adhession en dictionnaire pour faire de
+        l'import dans l'extranet FSGT en respectant les noms
+        de colonnes indiquees
+        """
+        _dict_row = self.toODS()
+        column_mapping = {
+            'NOM': 'nom',
+            'PRENOM': 'prenom',
+            'NAISS': 'date-de-naissance',
+            'SEXE': 'civilite',
+            'EMAIL': 'adresse-mail',
+            'ADRESSE': 'adresse-nom-voie',
+            'CP': 'adresse-code-postal',
+            'VILLE': 'adresse-commune',
+            'TELDOM': 'adresse-tel',
+            'TELPRO': 'adresse-mobile'
+        }
+
+        # remappe
+        out_dict =  {
+            column_mapping[old_key]: value for old_key,
+            value in _dict_row.items()
+            if old_key in list(column_mapping.keys())
+        }
+        return out_dict

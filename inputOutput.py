@@ -32,7 +32,7 @@ from typing import List
 #     adhesions = remplacerTitresColonnes(adhesions)
 #     return adhesions
 
-SEND_EMAILS = True  # must be True when not debugging
+SEND_EMAILS = False  # must be True when not debugging
 
 def recupDonneesHelloAsso(chemins):
     """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso.
@@ -283,9 +283,12 @@ def fichierImportBaseLicence(chemins):
         lot += 1
         filename = 'fichier_import_base_licence_'+chemins['saison']+'_Lot%02i.csv'%lot
         try:
-            fp       = open(chemins['dossierATraiter']+filename,"w")
-            fp.close()
-        except:
+            # fp       = open(chemins['dossierATraiter']+filename,"w")
+            # fp.close()
+            if os.path.exists(chemins['dossierATraiter']+filename):
+                os.remove(chemins['dossierATraiter']+filename)
+            pd.DataFrame().to_csv(chemins['dossierATraiter'])
+        except Exception as _:
             erreur += " * Erreur : échec à la création de "+chemins['dossierATraiter']+filename+"\n"
     else : ### On a trouvé plusieurs fichiers d'import dans dossierATraiter
         print(" * INFO : Plusieurs fichiers 'fichier_import_base_licence_*.csv' ont été trouvé dans le dossier "+chemins['dossierATraiter'])
@@ -307,27 +310,40 @@ def ecrireFichiersFSGT(nvllesAdhesions,chemins):
     """
     erreur = ''
     chemins = fichierImportBaseLicence(chemins)
-    for nvlleAdhesion in nvllesAdhesions:
-        fichier       = False
-        if nvlleAdhesion.erreur >0:
+    for _nvlleAdhesion in nvllesAdhesions:
+        liste_chemins_ecriture: List[str] = []
+        if _nvlleAdhesion.erreur > 0:
+            liste_chemins_ecriture.append(chemins['erreurs.csv'])
+
+        # on devrait avoir a ne pas importer de fichier pour les renouvellements
+        if not _nvlleAdhesion.statut == 'RNV':
+            if _nvlleAdhesion.statut == 'MUT':
+                if (
+                        "NON" in _nvlleAdhesion.licenceOK
+                        or "EXT" in _nvlleAdhesion.licenceOK
+                ):
+                    liste_chemins_ecriture.append(chemins['mutations.csv'])
+            elif not _nvlleAdhesion.statut == 'EXT':
+                if "NON" in _nvlleAdhesion.licenceOK:
+                    liste_chemins_ecriture.append(chemins['fichierImport'])
+
+        for _csv_file in liste_chemins_ecriture:
             try:
-                fichier = open(chemins['erreurs.csv']  ,'a')
-            except:
-                erreur += " * Erreur : échec à l'ouverture de "+chemins['erreurs.csv']+"\n"
-        elif nvlleAdhesion.statut == 'MUT':
-            try:
-                fichier = open(chemins['mutations.csv'],'a')
-            except:
-                erreur += " * Erreur : échec à l'ouverture de "+chemins['mutations.csv']+"\n"
-        elif not(nvlleAdhesion.statut == 'EXT'):
-            try:
-                fichier = open(chemins['fichierImport'],'a')
-            except:
-                erreur += " * Erreur : échec à l'ouverture de "+chemins['fichierImport']+"\n"
-        if fichier:
-            #print(nvlleAdhesion.toString("FSGT"), file=fichier)
-            print(nvlleAdhesion.toString("elicence"), file=fichier)
-            fichier.close()
+                print("_csv_file: {}".format(_csv_file))
+                if os.path.exists(_csv_file):
+                    _df_to_save = pd.concat([
+                        pd.read_csv(_csv_file),
+                        pd.DataFrame(_nvlleAdhesion.to_FSGT_import_row(), index=[0])
+                    ], ignore_index=True)
+                    _df_to_save.drop_duplicates(subset=["nom", "prenom", "date-de-naissance"], inplace=True)
+                    _df_to_save.to_csv(_csv_file, index=False)
+                else:
+                    pd.DataFrame(
+                        _nvlleAdhesion.to_FSGT_import_row(), index=[0]
+                    ).reset_index(drop=True).to_csv(_csv_file, index=False)
+            except Exception as ex:
+                print(f" * Erreur : échec à l'ecriture de {_csv_file} {str(ex)}")
+                erreur += f" * Erreur : échec à l'ecriture de {_csv_file} {str(ex)}"
     chemins['erreurExport'] += erreur
     return chemins
 
