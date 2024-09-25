@@ -32,7 +32,7 @@ from typing import List
 #     adhesions = remplacerTitresColonnes(adhesions)
 #     return adhesions
 
-SEND_EMAILS = False  # must be True when not debugging
+SEND_EMAILS = True  # must be True when not debugging
 
 def recupDonneesHelloAsso(chemins):
     """ 2022.08.24 : les données sont maintenant récupérées via l'API HelloAsso.
