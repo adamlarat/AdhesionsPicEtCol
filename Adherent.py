@@ -257,7 +257,7 @@ class Adherent:
         for arg in args:
             self.messageErreur += str(arg)
         self.messageErreur += "\n"
-        self._debug_logger.info("".join(args))
+        self._debug_logger.info("".join([str(i) for i in args]))
         if self.afficherErreur :
             print(*args)
         return
@@ -432,7 +432,10 @@ class Adherent:
                     self.derniereSaison['nom']    = toutesLesAdhesions[i]['saison']
                 self.premiereSaison['indice'] = i
                 self.premiereSaison['nom']    = toutesLesAdhesions[i]['saison']
-        self.adhesionEnCours = not (len(self.historique) > 0 and self.historique[0] >= 0)
+        self.adhesionEnCours = not (
+            len(self.historique) > 0 and
+            len(np.array(self.historique)[np.array(self.historique) >= 0]) > 0
+        )
         self._debug_logger.info(f" ancienAdherent: {self.ancienAdherent}")
         if (not self.ancienAdherent) and self.statut == 'RNV':
             self.noter(" * ERROR_"+self.statut+":",
@@ -475,8 +478,11 @@ class Adherent:
         self.noter(" * INFO : Adhérent·e trouvé dans la base de donnée !")
         self.noter("          Dernière adhésion, saison",self.derniereSaison['nom'],
                       ", ligne ",self.historique[indice])
-        self.derniereAdhesion = Adherent(adhesions=toutesLesAdhesions[indice]['tableau'],
-                                         ligne=self.historique[indice],afficherErreur=False)
+        self.derniereAdhesion = Adherent(
+            adhesions=toutesLesAdhesions[0]['tableau'],
+            ligne=self.historique[indice],
+            afficherErreur=False
+        )
         ### Mettre à jour les données si c'est un ancien adhérent non en cours
         if not self.adhesionEnCours:
             self.miseAJourStatut()

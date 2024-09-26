@@ -115,10 +115,7 @@ for entree in yield_input():
             _found_in_current_adhesions >= 0
         ):
             # si cet adherent a sa license enrengirstree comme ok
-            if mf.getCol(
-                toutesLesAdhesions_saison_courante[0]["tableau"],
-                'LICENCE_OK'
-            )[_found_in_current_adhesions] == "NON":
+            if mf.getCol(toutesLesAdhesions_saison_courante[0]["tableau"], 'LICENCE_OK')[_found_in_current_adhesions] == "NON":
                 nouvo.on_recommence_rnv = True
             else:
                 nouvo.on_recommence_rnv = False
@@ -190,15 +187,15 @@ else:
 
 adhesionsEnCours = []
 erreurEnCours = 0
-# for i in range(1,Nb_enCours+1):
-#     adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
-#     erreur = adherent.verifierAdhesionEnCours(chemins["dossierCM"])
-#     if erreur > 0:
-#         print(adherent.messageErreur)
-#     adhesionsEnCours += (adherent,)
-#     erreurEnCours    += erreur
-# if erreurEnCours == 0:
-#     print("  Toutes les adhésions de cette annee sont nickels !")
+for i in range(1,Nb_enCours+1):
+    adherent = Adherent(adhesions=enCours_np,ligne=i,afficherErreur=False)
+    erreur = adherent.verifierAdhesionEnCours(chemins["dossierCM"])
+    if erreur > 0:
+        print(adherent.messageErreur)
+    adhesionsEnCours += (adherent,)
+    erreurEnCours    += erreur
+if erreurEnCours == 0:
+    print("  Toutes les adhésions de cette annee sont nickels !")
 
 print(datetime.now().strftime("%H%M%S")," : ","Export ")
 
